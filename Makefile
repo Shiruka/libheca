@@ -20,6 +20,7 @@ libheca:
 	gcc -g -Wall -fPIC -DDEBUG -c libheca.c
 	gcc -g -Wall -shared -o libheca.so libheca.o dsm_init.o -lpthread -DDEBUG
 	cp libheca.h /usr/include/libheca.h
+	cp dsm_init.h /usr/include/dsm_init.h
 	cp libheca.so /usr/lib/libheca.so.1.0.1
 	ln -sf /usr/lib/libheca.so.1.0.1 /usr/lib/libheca.so.1.0
 	ln -sf /usr/lib/libheca.so.1.0 /usr/lib/libheca.so.1
