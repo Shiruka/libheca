@@ -1,4 +1,4 @@
-#include "../headers/config.h"
+#include "config.h"
 
 struct CONF *config_parse(char *fname)
 {

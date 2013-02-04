@@ -1,4 +1,4 @@
-#include "../headers/dsm.h"
+#include "dsm.h"
 
 static void parse_svm_data(char *s, struct svm_data *svm)
 {

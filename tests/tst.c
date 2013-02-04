@@ -1,4 +1,4 @@
-#include "headers/tst.h"
+#include "tst.h"
 
 static void print_pages(unsigned long n)
 {

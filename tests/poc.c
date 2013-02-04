@@ -1,4 +1,4 @@
-#include "headers/poc.h"
+#include "poc.h"
 
 static void provide(char *conf_name, char *mvm_id_str)
 {
