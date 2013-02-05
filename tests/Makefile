@@ -1,6 +1,6 @@
 include ../Makefile.conf
 
-libheca_DIR := ${PWD}/../src
+libheca_DIR := $(CURDIR)/../src
 
 tst_SRC := tst.c config.c dsm.c
 tst_INC := config.h dsm.h
