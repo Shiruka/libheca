@@ -2,13 +2,12 @@
 
 static void parse_svm_data(char *s, struct svm_data *svm)
 {
-    int i;
     char *ptr = strstr(s, ":");
+    
+    *ptr = 0;
 
+    svm->ip = inet_addr(s);
     svm->port = atoi(ptr+1);
-    for (i = 0; i < ptr-s && i < 20; i++)
-        svm->ip[i] = s[i];
-    svm->ip[i] = '\0';
 }
 
 /* parse up to three svm data and pass to dsm */
@@ -46,7 +45,7 @@ int init_mvm(unsigned long sz, void *mem, struct CONF *conf, int mvm_id)
 
     master_addr.sin_family = AF_INET;
     master_addr.sin_port = htons(4445);
-    master_addr.sin_addr.s_addr = inet_addr(cvm.ip);
+    master_addr.sin_addr.s_addr = cvm.ip;
 
     return dsm_client_init(mem, sz, mvm_id, &master_addr, AUTO_UNMAP);
 }

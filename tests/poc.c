@@ -45,7 +45,7 @@ static void compute(unsigned long sz, char *conf_name)
     mem = valloc(sz);
     assert(mem);
     if (conf) {
-        struct unmap_data mr_array = {.id=1,.dsm_id=1,.sz=sz,.addr=mem};
+        struct unmap_data mr_array = {.mr_id=1,.dsm_id=1,.sz=sz,.addr=mem};
         fd = init_cvm(conf, &mr_array, 1);
     }
     /* payload: configurable in the future */

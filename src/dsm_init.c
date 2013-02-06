@@ -16,16 +16,16 @@ int dsm_register(struct svm_data *local_svm)
         return -1;
     }
 
-    DEBUG_PRINT("DSM_DSM system call\n");
-    rc = ioctl(fd, DSM_DSM, local_svm);
+    DEBUG_PRINT("HECAIOC_DSM_INIT system call\n");
+    rc = ioctl(fd, HECAIOC_DSM_INIT, local_svm);
     if (rc) {
-        DEBUG_ERROR("DSM_DSM");
+        DEBUG_ERROR("HECAIOC_DSM_INIT");
         return -1;
     }
-    DEBUG_PRINT("DSM_SVM (local) system call\n");
-    rc = ioctl(fd, DSM_SVM, local_svm);
+    DEBUG_PRINT("HECAIOC_SVM_ADD (local) system call\n");
+    rc = ioctl(fd, HECAIOC_SVM_ADD, local_svm);
     if (rc) {
-        DEBUG_ERROR("DSM_SVM (local)");
+        DEBUG_ERROR("HECAIOC_SVM_ADD (local)");
         return -1;
     }
     
@@ -73,7 +73,7 @@ static void * client_socket_init(void *arg)
     DEBUG_PRINT("Waiting for client connection...\n");
     client_sock = accept(*(client->master_sock), (struct sockaddr*) &cli_addr, &clilen);
     if (client_sock < 0) 
-        DEBUG_ERROR("DSM_DSM");
+        DEBUG_ERROR("HECAIOC_DSM_INIT");
             
     /* backup socket connection */
     client->client_sock = client_sock;
@@ -157,17 +157,17 @@ int dsm_connect(int fd, int local_svm_id, int svm_count,
         
         svm = &svm_array[i];
 
-        DEBUG_PRINT("DSM_SVM (remote)\n");
-        rc = ioctl(fd, DSM_SVM, svm);
+        DEBUG_PRINT("HECAIOC_SVM_ADD (remote)\n");
+        rc = ioctl(fd, HECAIOC_SVM_ADD, svm);
         if (rc) {
-            DEBUG_ERROR("DSM_SVM (remote)");
+            DEBUG_ERROR("HECAIOC_SVM_ADD (remote)");
             return -1;
         }
 
-        DEBUG_PRINT("DSM_CONNECT\n");
-        rc = ioctl(fd, DSM_CONNECT, svm);
+        DEBUG_PRINT("HECAIOC_SVM_CONNECT\n");
+        rc = ioctl(fd, HECAIOC_SVM_CONNECT, svm);
         if (rc) {
-            DEBUG_ERROR("DSM_CONNECT");
+            DEBUG_ERROR("HECAIOC_SVM_CONNECT");
             return -1;
         }
     }
@@ -235,23 +235,20 @@ int dsm_memory_map(int fd, int mr_count, struct unmap_data *unmap_array,
     for (i = 0; i < mr_count; i++)
     {
         mr = unmap_array[i];
-        if (auto_unmap)
-            mr.unmap = TRUE;
-        else
-            mr.unmap = FALSE;
+        mr.do_unmap = !!auto_unmap;
 
         j = 0;
         while (mr.svm_ids[j] != 0) {
             if (local_svm_id == mr.svm_ids[j]) {
-                mr.unmap = FALSE;
+                mr.do_unmap = 0;
                 break;
             }
             j++;
         }
-        DEBUG_PRINT("DSM_MR system call\n");
-        rc = ioctl(fd, DSM_MR, &mr);
+        DEBUG_PRINT("HECAIOC_MR_ADD system call\n");
+        rc = ioctl(fd, HECAIOC_MR_ADD, &mr);
         if (rc < 0) {
-            DEBUG_ERROR("DSM_MR");
+            DEBUG_ERROR("HECAIOC_MR_ADD");
             return -1;
         }
     }
@@ -376,12 +373,8 @@ struct svm_data *dsm_local_svm_array_init(int svm_count,
 {
     int i;
 
-    for (i = 0; i < svm_count; i++) {
-        if (i == (local_svm_id - 1)) 
-            svm_array[i].local = TRUE;
-        else
-            svm_array[i].local = FALSE;
-    }
+    for (i = 0; i < svm_count; i++)
+        svm_array[i].is_local = (i == (local_svm_id - 1));
     
     return &svm_array[local_svm_id - 1];
 }

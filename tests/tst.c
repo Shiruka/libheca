@@ -29,7 +29,7 @@ static void push_pages(int fd, unsigned long n)
     for_each_mr (k) {
         for (i = 0; i < n; i++) {
             data.addr = mr_array[k].addr + (PAGE_SIZE*i);
-            j = ioctl(fd, DSM_TRY_PUSH_BACK_PAGE, &data);
+            j = ioctl(fd, HECAIOC_MR_PUSHBACK, &data);
             if (j)
                 printf("%d:%d error pushing: %d\n", k, i--, j);
         }
@@ -57,7 +57,7 @@ static void provide(char *conf_name, int mvm_id, char c)
     fd = init_mvm(sz, mem, conf, mvm_id);
 
     notify("[3] dirty pages:");
-    c = (mvm_id % 2)? '/' : '\\';
+    c = (mvm_id % 2)? 'd' : 'e';
     dirty_pages(NUM_PUSHBACK, c);
 
     notify("[6] dirty and print pages (2):");

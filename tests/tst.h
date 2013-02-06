@@ -21,10 +21,10 @@
 #define NUM_PUSHBACK 1000
 
 static struct unmap_data mr_array[] = {
-    {.id = 1, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES},
-    {.id = 2, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES},
-    {.id = 3, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES},
-    {.id = 4, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES},
+    {.mr_id = 1, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES},
+    {.mr_id = 2, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES},
+    {.mr_id = 3, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES},
+    {.mr_id = 4, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES},
 };
 static int mr_count = sizeof(mr_array) / sizeof(struct unmap_data);
 #define for_each_mr(i) \
