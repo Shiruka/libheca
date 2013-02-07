@@ -163,13 +163,6 @@ int dsm_connect(int fd, int local_svm_id, int svm_count,
             DEBUG_ERROR("HECAIOC_SVM_ADD (remote)");
             return -1;
         }
-
-        DEBUG_PRINT("HECAIOC_SVM_CONNECT\n");
-        rc = ioctl(fd, HECAIOC_SVM_CONNECT, svm);
-        if (rc) {
-            DEBUG_ERROR("HECAIOC_SVM_CONNECT");
-            return -1;
-        }
     }
     return 0;
 }

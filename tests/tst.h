@@ -17,8 +17,9 @@
 #include "config.h"
 
 #define PAGE_SIZE 4096
-#define NUM_PAGES 25000
-#define NUM_PUSHBACK 1000
+#define SCALE_FACTOR 10
+#define NUM_PAGES (25 * SCALE_FACTOR)
+#define NUM_PUSHBACK SCALE_FACTOR
 
 static struct unmap_data mr_array[] = {
     {.mr_id = 1, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES},

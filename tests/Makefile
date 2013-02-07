@@ -3,13 +3,13 @@ include ../Makefile.conf
 libheca_DIR := $(CURDIR)/../src
 
 tst_SRC := tst.c config.c dsm.c
-tst_INC := config.h dsm.h
+tst_INC := config.h dsm.h tst.h
 tst_BIN := tst
 tst_CFLAGS := $(CFLAGS) -I. -I$(libheca_DIR)
 tst_LDFLAGS := $(LDFLAGS) -L$(libheca_DIR) -lheca -lm
 
 poc_SRC := poc.c quicksort.c config.c dsm.c
-poc_INC := quicksort.h config.h dsm.h
+poc_INC := quicksort.h config.h dsm.h poc.h
 poc_BIN := poc
 poc_CFLAGS := $(CFLAGS) -I. -I$(libheca_DIR)
 poc_LDFLAGS := $(LDFLAGS) -L$(libheca_DIR) -lheca -lm
