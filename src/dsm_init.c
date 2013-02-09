@@ -222,27 +222,18 @@ int dsm_client_assign_mem(void *dsm_mem, unsigned long dsm_mem_sz, int mr_count,
 int dsm_memory_map(int fd, int mr_count, struct unmap_data *unmap_array,
         int local_svm_id, int auto_unmap)
 {
-    int i, j, rc = 0;
+    int i, rc = 0;
     struct unmap_data mr;
 
     for (i = 0; i < mr_count; i++)
     {
         mr = unmap_array[i];
-        mr.do_unmap = !!auto_unmap;
 
-        j = 0;
-        while (mr.svm_ids[j] != 0) {
-            if (local_svm_id == mr.svm_ids[j]) {
-                mr.do_unmap = 0;
-                break;
-            }
-            j++;
-        }
         DEBUG_PRINT("HECAIOC_MR_ADD system call\n");
         rc = ioctl(fd, HECAIOC_MR_ADD, &mr);
         if (rc < 0) {
             DEBUG_ERROR("HECAIOC_MR_ADD");
-            return -1;
+            return rc;
         }
     }
     return 0;
