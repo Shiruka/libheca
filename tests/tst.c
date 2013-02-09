@@ -23,16 +23,16 @@ static void dirty_pages(unsigned long n, char c)
 static void push_pages(int fd, unsigned long n)
 {
     struct unmap_data data;
-    int i, j, k;
+    int k;
 
     data.dsm_id = 1;
+    data.sz = PAGE_SIZE * n;
     for_each_mr (k) {
-        for (i = 0; i < n; i++) {
-            data.addr = mr_array[k].addr + (PAGE_SIZE*i);
-            j = ioctl(fd, HECAIOC_MR_PUSHBACK, &data);
-            if (j)
-                printf("%d:%d error pushing: %d\n", k, i--, j);
-        }
+        int j;
+        data.addr = mr_array[k].addr;
+        j = ioctl(fd, HECAIOC_MR_PUSHBACK, &data);
+        if (j)
+            printf("mr[%d] error in HECAIOC_MR_PUSHBACK: %d\n", k, j);
     }
 }
 
