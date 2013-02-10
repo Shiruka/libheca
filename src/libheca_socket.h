@@ -31,39 +31,39 @@ struct client_connect_info {
 
 void clients_sockets_init(int svm_count, struct client_connect_info *clients);
 
-int dsm_clients_register(int svm_count, struct svm_data* svm_array,
+int heca_clients_register(int svm_count, struct svm_data* svm_array,
         struct client_connect_info *clients);
 
-int dsm_clients_connect(int svm_count, struct svm_data *svm_array,
+int heca_clients_connect(int svm_count, struct svm_data *svm_array,
         struct client_connect_info *clients);
 
-int dsm_clients_memory_map(int svm_count, int mr_count,
+int heca_clients_memory_map(int svm_count, int mr_count,
         struct unmap_data *unmap_array, struct client_connect_info *clients);
 
 void clients_socket_cleanup(int svm_count, struct client_connect_info *clients);
 
-int dsm_master_connect(struct sockaddr_in *master_addr, int svm_id);
+int heca_master_connect(struct sockaddr_in *master_addr, int svm_id);
 
-int dsm_svm_count_recv(int sock, int *svm_count);
+int heca_svm_count_recv(int sock, int *svm_count);
 
-int dsm_svm_array_recv(int sock, int svm_count, struct svm_data *svm_array);
+int heca_svm_array_recv(int sock, int svm_count, struct svm_data *svm_array);
 
-int dsm_client_registered(int sock);
+int heca_client_registered(int sock);
 
-struct svm_data *dsm_local_svm_array_init(int svm_count,
+struct svm_data *heca_local_svm_array_init(int svm_count,
         struct svm_data *svm_array, int local_svm_id);
 
-int dsm_client_connect(int sock, int fd, int local_svm_id, int svm_count,
+int heca_client_connect(int sock, int fd, int local_svm_id, int svm_count,
         struct svm_data *svm_array);
 
-int dsm_mr_count_recv(int sock, int *mr_count);
+int heca_mr_count_recv(int sock, int *mr_count);
 
-int dsm_unmap_array_recv(int sock, int svm_count,
+int heca_unmap_array_recv(int sock, int svm_count,
         struct unmap_data *unmap_array);
 
-int dsm_client_memory_mapped(int sock);
+int heca_client_memory_mapped(int sock);
 
-int dsm_client_assign_mem(void *dsm_mem, unsigned long dsm_mem_sz, int mr_count,
+int heca_client_assign_mem(void *dsm_mem, unsigned long dsm_mem_sz, int mr_count,
         struct unmap_data *mr_array);
 
 #endif /* LIBHECA_SOCKET_H_ */

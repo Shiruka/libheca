@@ -90,7 +90,7 @@ void clients_sockets_init(int svm_count, struct client_connect_info *clients)
 }
 
 /* wait for clients to register */
-int dsm_clients_register(int svm_count, struct svm_data *svm_array,
+int heca_clients_register(int svm_count, struct svm_data *svm_array,
         struct client_connect_info *clients)
 {  
     int i, client_count, n, ack;    
@@ -126,7 +126,7 @@ int dsm_clients_register(int svm_count, struct svm_data *svm_array,
 }
 
 /* wait for clients to connect */
-int dsm_clients_connect(int svm_count, struct svm_data *svm_array,
+int heca_clients_connect(int svm_count, struct svm_data *svm_array,
         struct client_connect_info *clients)
 {
     int i, client_count, sig, n, ack;
@@ -158,7 +158,7 @@ int dsm_clients_connect(int svm_count, struct svm_data *svm_array,
 }
 
 /* client maps its valloc()ed memory into memory regions */
-int dsm_client_assign_mem(void *dsm_mem, unsigned long dsm_mem_sz, int mr_count,
+int heca_client_assign_mem(void *dsm_mem, unsigned long dsm_mem_sz, int mr_count,
         struct unmap_data *mr_array)
 {
     int i;
@@ -178,7 +178,7 @@ int dsm_client_assign_mem(void *dsm_mem, unsigned long dsm_mem_sz, int mr_count,
 
 /* wait for clients to register memory regions */
 /* FIXME: erase unneeded local pointers on unmap_array */
-int dsm_clients_memory_map(int svm_count, int mr_count,
+int heca_clients_memory_map(int svm_count, int mr_count,
         struct unmap_data *unmap_array, struct client_connect_info *clients)
 {
     int i, client_count, n, ack_sig;
@@ -227,7 +227,7 @@ void clients_socket_cleanup(int svm_count, struct client_connect_info *clients)
 }
 
 /* client connects to master */
-int dsm_master_connect(struct sockaddr_in *master_addr, int svm_id)
+int heca_master_connect(struct sockaddr_in *master_addr, int svm_id)
 {
     int sockfd, n;
 
@@ -252,7 +252,7 @@ int dsm_master_connect(struct sockaddr_in *master_addr, int svm_id)
     return sockfd;
 }
 
-int dsm_svm_count_recv(int sock, int *svm_count)
+int heca_svm_count_recv(int sock, int *svm_count)
 {
     int n = read(sock, svm_count, sizeof(int));
     if (n < 0) {
@@ -264,7 +264,7 @@ int dsm_svm_count_recv(int sock, int *svm_count)
     return 0;
 }
 
-int dsm_svm_array_recv(int sock, int svm_count, struct svm_data *svm_array)
+int heca_svm_array_recv(int sock, int svm_count, struct svm_data *svm_array)
 {
     int n = read(sock, svm_array, svm_count * sizeof(struct svm_data));
 
@@ -275,7 +275,7 @@ int dsm_svm_array_recv(int sock, int svm_count, struct svm_data *svm_array)
     return 0;
 }
 
-int dsm_client_registered(int sock)
+int heca_client_registered(int sock)
 {
     int n, sig;
 
@@ -289,7 +289,7 @@ int dsm_client_registered(int sock)
 }
 
 /* set svm_data.local values, return svm_data for local svm */
-struct svm_data *dsm_local_svm_array_init(int svm_count,
+struct svm_data *heca_local_svm_array_init(int svm_count,
         struct svm_data *svm_array, int local_svm_id)
 {
     int i;
@@ -301,7 +301,7 @@ struct svm_data *dsm_local_svm_array_init(int svm_count,
 }
 
 
-int dsm_client_connect(int sock, int fd, int local_svm_id, int svm_count,
+int heca_client_connect(int sock, int fd, int local_svm_id, int svm_count,
         struct svm_data *svm_array)
 {
     int n, sig, ret;
@@ -317,7 +317,7 @@ int dsm_client_connect(int sock, int fd, int local_svm_id, int svm_count,
         return -1;
     }
 
-    ret = dsm_connect(fd, local_svm_id, svm_count, svm_array);
+    ret = heca_connect(fd, local_svm_id, svm_count, svm_array);
     if (ret < 0) {
         return ret;
     }
@@ -331,7 +331,7 @@ int dsm_client_connect(int sock, int fd, int local_svm_id, int svm_count,
     return 0;
 }
 
-int dsm_mr_count_recv(int sock, int *mr_count)
+int heca_mr_count_recv(int sock, int *mr_count)
 {
     int n;
     n = read(sock, mr_count, sizeof(int));
@@ -344,7 +344,7 @@ int dsm_mr_count_recv(int sock, int *mr_count)
     return 0;
 }
 
-int dsm_unmap_array_recv(int sock, int mr_count, struct unmap_data *unmap_array)
+int heca_unmap_array_recv(int sock, int mr_count, struct unmap_data *unmap_array)
 {
     int n;
 
@@ -356,7 +356,7 @@ int dsm_unmap_array_recv(int sock, int mr_count, struct unmap_data *unmap_array)
     return 0;
 }
 
-int dsm_client_memory_mapped(int sock)
+int heca_client_memory_mapped(int sock)
 {
     int n, sig;
     

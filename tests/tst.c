@@ -65,7 +65,7 @@ static void provide(char *conf_name, int mvm_id, char c)
     print_pages(NUM_PUSHBACK);
 
     notify("[.]disconnect:\n");
-    dsm_cleanup(fd);
+    heca_cleanup(fd);
 }
 
 static void compute(char *conf_name)
@@ -102,7 +102,7 @@ static void compute(char *conf_name)
 
     /* cleanup */
     notify("[.] disconnect:\n");
-    dsm_cleanup(fd);
+    heca_cleanup(fd);
     config_clean(conf);
     for_each_mr (i)
         free(mr_array[i].addr);

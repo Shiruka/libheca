@@ -8,7 +8,7 @@
 
 #define DSM_CHRDEV  "/dev/rdma"
 
-int dsm_register(struct svm_data *local_svm) 
+int heca_register(struct svm_data *local_svm) 
 {
     int rc, fd;
    
@@ -36,7 +36,7 @@ int dsm_register(struct svm_data *local_svm)
     return fd;
 }
 
-int dsm_connect(int fd, int local_svm_id, int svm_count,
+int heca_connect(int fd, int local_svm_id, int svm_count,
         struct svm_data *svm_array)
 {
     int i, rc;
@@ -59,7 +59,7 @@ int dsm_connect(int fd, int local_svm_id, int svm_count,
     return 0;
 }
 
-int dsm_memory_map(int fd, int mr_count, struct unmap_data *unmap_array,
+int heca_memory_map(int fd, int mr_count, struct unmap_data *unmap_array,
         int local_svm_id)
 {
     int i, rc = 0;
@@ -77,5 +77,10 @@ int dsm_memory_map(int fd, int mr_count, struct unmap_data *unmap_array,
         }
     }
     return 0;
+}
+
+void heca_cleanup(int fd)
+{
+    close(fd);
 }
 
