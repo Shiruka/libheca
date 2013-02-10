@@ -28,8 +28,9 @@ int heca_dsm_init(int fd, struct svm_data *local_svm);
 int heca_svm_add(int fd, int local_svm_id, int svm_count, struct svm_data
         *svm_array);
 
-int heca_mr_add(int fd, int mr_count, struct unmap_data *unmap_array, int
-        local_svm_id);
+int heca_mr_add(int fd, int mr_count, struct unmap_data *unmap_array);
+
+int heca_mr_pushback(int fd, int mr_count, struct unmap_data *unmap_array);
 
 #endif /* LIBHECA_IOCTL_H_ */
 

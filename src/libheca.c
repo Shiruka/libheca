@@ -36,7 +36,7 @@ int heca_master_open(int svm_count, struct svm_data *svm_array, int mr_count,
     if (ret < 0)
         goto return_error;
 
-    ret = heca_mr_add(fd, mr_count, mr_array, MASTER_SVM_ID); 
+    ret = heca_mr_add(fd, mr_count, mr_array);
     if (ret < 0)
         goto return_error;
 
@@ -108,7 +108,7 @@ int heca_client_open(void *dsm_mem, unsigned long dsm_mem_sz, int local_svm_id,
     if ( ret < 0)
         goto return_error;
 
-    ret = heca_mr_add(fd, mr_count, mr_array, local_svm_id); 
+    ret = heca_mr_add(fd, mr_count, mr_array);
     if ( ret < 0)
         goto return_error;
 

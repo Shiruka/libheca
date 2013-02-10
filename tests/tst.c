@@ -30,7 +30,7 @@ static void push_pages(int fd, unsigned long n)
     for_each_mr (k) {
         int j;
         data.addr = mr_array[k].addr;
-        j = ioctl(fd, HECAIOC_MR_PUSHBACK, &data);
+        j = heca_mr_pushback(fd, 1, &data);
         if (j)
             printf("mr[%d] error in HECAIOC_MR_PUSHBACK: %d\n", k, j);
     }
