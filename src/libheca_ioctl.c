@@ -2,9 +2,9 @@
  * Steve Walsh <steve.walsh@sap.com>
  */
 
+#include <linux/dsm.h>
 #include "libheca_socket.h"
 #include "libheca_ioctl.h"
-#include <linux/dsm.h>
 
 #define DSM_CHRDEV  "/dev/rdma"
 

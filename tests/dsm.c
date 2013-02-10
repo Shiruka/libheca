@@ -6,8 +6,9 @@ static void parse_svm_data(char *s, struct svm_data *svm)
     
     *ptr = 0;
 
-    svm->ip = inet_addr(s);
-    svm->port = atoi(ptr+1);
+    svm->server.sin_family = AF_INET;
+    svm->server.sin_addr.s_addr = inet_addr(s);
+    svm->server.sin_port = htons(atoi(ptr+1));
 }
 
 /* parse up to three svm data and pass to dsm */
@@ -45,7 +46,7 @@ int init_mvm(unsigned long sz, void *mem, struct CONF *conf, int mvm_id)
 
     master_addr.sin_family = AF_INET;
     master_addr.sin_port = htons(4445);
-    master_addr.sin_addr.s_addr = cvm.ip;
+    master_addr.sin_addr.s_addr = cvm.server.sin_addr.s_addr;
 
     return heca_client_open(mem, sz, mvm_id, &master_addr);
 }
