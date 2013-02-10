@@ -5,7 +5,7 @@
 #include "libheca.h"
 
 int dsm_master_init(int svm_count, struct svm_data *svm_array, int mr_count,
-    struct unmap_data *mr_array, int auto_unmap)
+    struct unmap_data *mr_array)
 {
     int fd, ret;
     struct svm_data *local_svm;
@@ -31,7 +31,7 @@ int dsm_master_init(int svm_count, struct svm_data *svm_array, int mr_count,
     if ( ret < 0)
         goto return_error;
 
-    ret = dsm_memory_map(fd, mr_count, mr_array, MASTER_SVM_ID, auto_unmap); 
+    ret = dsm_memory_map(fd, mr_count, mr_array, MASTER_SVM_ID); 
     if ( ret < 0)
         goto return_error;
 
@@ -44,12 +44,11 @@ int dsm_master_init(int svm_count, struct svm_data *svm_array, int mr_count,
     return fd;    
 
 return_error:
-    DEBUG_ERROR("Failed to initialize master node");
     return ret;
 }
 
 int dsm_client_init(void *dsm_mem, unsigned long dsm_mem_sz, int local_svm_id,
-        struct sockaddr_in *master_addr, int auto_unmap)
+        struct sockaddr_in *master_addr)
 {
     int sock, svm_count, fd, ret, mr_count;
     struct svm_data *local_svm;
@@ -100,7 +99,7 @@ int dsm_client_init(void *dsm_mem, unsigned long dsm_mem_sz, int local_svm_id,
     if ( ret < 0)
         goto return_error;
 
-    ret = dsm_memory_map(fd, mr_count, mr_array, local_svm_id, auto_unmap); 
+    ret = dsm_memory_map(fd, mr_count, mr_array, local_svm_id); 
     if ( ret < 0)
         goto return_error;
 
@@ -113,7 +112,6 @@ int dsm_client_init(void *dsm_mem, unsigned long dsm_mem_sz, int local_svm_id,
     return fd;  
 
 return_error:
-    DEBUG_ERROR("Failed to initialize client node");
     return ret;
 }
 

@@ -9,8 +9,8 @@ clean:
 
 .PHONY: clean
 
-libheca_INC := libheca.h dsm_init.h
-libheca_SRC := libheca.c dsm_init.c
+libheca_INC := libheca.h libheca_socket.h libheca_ioctl.h
+libheca_SRC := libheca.c libheca_socket.c libheca_ioctl.c
 libheca_OBJ := $(libheca_SRC:.c=.o)
 libheca_LIB := libheca.so
 libheca_CFLAGS := $(CFLAGS) -fPIC

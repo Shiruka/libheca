@@ -2,13 +2,11 @@
  * Steve Walsh <steve.walsh@sap.com>
  */
  
-#ifndef LIB_HECA_DEF_H_
-#define LIB_HECA_DEF_H_
+#ifndef LIBHECA_H_
+#define LIBHECA_H_
 
-#include "dsm_init.h"
-
-#define AUTO_UNMAP 1
-#define NO_AUTO_UNMAP 0
+#include "libheca_socket.h"
+#include "libheca_ioctl.h"
 
 /*
     dsm_master_init: initializes the master node for a heca connection. The
@@ -19,14 +17,14 @@
     known about the system.
  */
 int dsm_master_init (int svm_count, struct svm_data *svm_array, int mr_count,
-        struct unmap_data *mr_array, int auto_unmap);
+        struct unmap_data *mr_array);
 
 /* 
     dsm_client_init: initializes the client node for a heca connection. 
  */
 int dsm_client_init (void *dsm_mem, unsigned long dsm_mem_sz, int local_svm_id,
-        struct sockaddr_in *master_addr, int auto_unmap);
+        struct sockaddr_in *master_addr);
 
 void dsm_cleanup(int fd);
 
-#endif /* LIB_HECA_DEF_H_ */
+#endif /* LIBHECA_H_ */
