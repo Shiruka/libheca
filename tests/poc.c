@@ -22,7 +22,7 @@ static void provide(char *conf_name, char *mvm_id_str)
     printf("Providing, press [enter] to finish.\n");
     fscanf(stdin, "%c", &x);
 
-    heca_cleanup(fd);
+    heca_close(fd);
     config_clean(conf);
     free(mem);
 }
@@ -56,7 +56,7 @@ static void compute(unsigned long sz, char *conf_name)
 
     /* cleanup */
     if (conf) {
-        heca_cleanup(fd);
+        heca_close(fd);
         config_clean(conf);
     }
     free(mem);

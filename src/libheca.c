@@ -3,6 +3,7 @@
  */
 
 #include "libheca.h"
+#include "libheca_socket.h"
 
 int heca_master_open(int svm_count, struct svm_data *svm_array, int mr_count,
     struct unmap_data *mr_array)
@@ -15,28 +16,32 @@ int heca_master_open(int svm_count, struct svm_data *svm_array, int mr_count,
     clients = calloc(svm_count-1, sizeof(struct client_connect_info));
     clients_sockets_init(svm_count, clients);
 
-    fd = heca_register(local_svm);
-    if ( fd  < 0 )
+    fd = heca_open();
+    if (fd  < 0 )
+        goto return_error;
+ 
+    ret = heca_dsm_init(fd, local_svm);
+    if (ret  < 0 )
         goto return_error;
     
     ret = heca_clients_register(svm_count, svm_array, clients);
     if ( ret < 0)
         goto return_error;
     
-    ret = heca_connect(fd, MASTER_SVM_ID, svm_count, svm_array); 
-    if ( ret < 0)
+    ret = heca_svm_add(fd, MASTER_SVM_ID, svm_count, svm_array); 
+    if (ret < 0)
         goto return_error;
     
     ret = heca_clients_connect(svm_count, svm_array, clients);
-    if ( ret < 0)
+    if (ret < 0)
         goto return_error;
 
-    ret = heca_memory_map(fd, mr_count, mr_array, MASTER_SVM_ID); 
-    if ( ret < 0)
+    ret = heca_mr_add(fd, mr_count, mr_array, MASTER_SVM_ID); 
+    if (ret < 0)
         goto return_error;
 
     ret = heca_clients_memory_map(svm_count, mr_count, mr_array, clients); 
-    if ( ret < 0)
+    if (ret < 0)
         goto return_error;
 
     clients_socket_cleanup(svm_count, clients);
@@ -73,21 +78,25 @@ int heca_client_open(void *dsm_mem, unsigned long dsm_mem_sz, int local_svm_id,
     local_svm = heca_local_svm_array_init(svm_count, svm_array, local_svm_id);
 
     /* registration and connection */
-    fd = heca_register(local_svm); 
-    if ( fd < 0)
+    fd = heca_open();
+    if (fd < 0)
+        goto return_error;
+
+    ret = heca_dsm_init(fd, local_svm); 
+    if (ret < 0)
         goto return_error;
 
     ret = heca_client_registered(sock); 
-    if ( ret < 0)
+    if (ret < 0)
         goto return_error;
 
     ret = heca_client_connect(sock, fd, local_svm_id, svm_count, svm_array); 
-    if ( ret < 0)
+    if (ret < 0)
         goto return_error;
 
     /* memory regions */
     ret = heca_mr_count_recv(sock, &mr_count); 
-    if ( ret < 0)
+    if (ret < 0)
         goto return_error;
 
     mr_array = calloc(mr_count, sizeof(struct unmap_data));
@@ -99,7 +108,7 @@ int heca_client_open(void *dsm_mem, unsigned long dsm_mem_sz, int local_svm_id,
     if ( ret < 0)
         goto return_error;
 
-    ret = heca_memory_map(fd, mr_count, mr_array, local_svm_id); 
+    ret = heca_mr_add(fd, mr_count, mr_array, local_svm_id); 
     if ( ret < 0)
         goto return_error;
 

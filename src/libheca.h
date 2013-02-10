@@ -6,7 +6,7 @@
 #ifndef LIBHECA_H_
 #define LIBHECA_H_
 
-#include "libheca_socket.h"
+#include <netinet/in.h>
 #include "libheca_ioctl.h"
 
 /*

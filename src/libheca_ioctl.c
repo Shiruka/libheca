@@ -8,9 +8,9 @@
 
 #define DSM_CHRDEV  "/dev/rdma"
 
-int heca_register(struct svm_data *local_svm) 
+int heca_open(void)
 {
-    int rc, fd;
+    int fd;
    
     fd = open(DSM_CHRDEV, O_RDWR);
     int optval = 1;
@@ -19,6 +19,12 @@ int heca_register(struct svm_data *local_svm)
         DEBUG_ERROR("Could not open DSM_CHRDEV");
         return -1;
     }
+    return fd;
+}
+
+int heca_dsm_init(int fd, struct svm_data *local_svm) 
+{
+    int rc;
 
     DEBUG_PRINT("HECAIOC_DSM_INIT system call\n");
     rc = ioctl(fd, HECAIOC_DSM_INIT, local_svm);
@@ -33,10 +39,10 @@ int heca_register(struct svm_data *local_svm)
         return -1;
     }
     
-    return fd;
+    return 0;
 }
 
-int heca_connect(int fd, int local_svm_id, int svm_count,
+int heca_svm_add(int fd, int local_svm_id, int svm_count,
         struct svm_data *svm_array)
 {
     int i, rc;
@@ -59,7 +65,7 @@ int heca_connect(int fd, int local_svm_id, int svm_count,
     return 0;
 }
 
-int heca_memory_map(int fd, int mr_count, struct unmap_data *unmap_array,
+int heca_mr_add(int fd, int mr_count, struct unmap_data *unmap_array,
         int local_svm_id)
 {
     int i, rc = 0;
@@ -79,7 +85,7 @@ int heca_memory_map(int fd, int mr_count, struct unmap_data *unmap_array,
     return 0;
 }
 
-void heca_cleanup(int fd)
+void heca_close(int fd)
 {
     close(fd);
 }

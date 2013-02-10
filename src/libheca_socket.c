@@ -317,7 +317,7 @@ int heca_client_connect(int sock, int fd, int local_svm_id, int svm_count,
         return -1;
     }
 
-    ret = heca_connect(fd, local_svm_id, svm_count, svm_array);
+    ret = heca_svm_add(fd, local_svm_id, svm_count, svm_array);
     if (ret < 0) {
         return ret;
     }
