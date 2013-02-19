@@ -22,10 +22,10 @@
 #define NUM_PUSHBACK SCALE_FACTOR
 
 static struct unmap_data mr_array[] = {
-    {.mr_id = 1, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES},
-    {.mr_id = 2, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES},
-    {.mr_id = 3, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES},
-    {.mr_id = 4, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES},
+    {.mr_id = 1, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES, .flags = UD_AUTO_UNMAP},
+    {.mr_id = 2, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES, .flags = UD_AUTO_UNMAP},
+    {.mr_id = 3, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES, .flags = UD_AUTO_UNMAP},
+    {.mr_id = 4, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES, .flags = UD_AUTO_UNMAP},
 };
 static int mr_count = sizeof(mr_array) / sizeof(struct unmap_data);
 #define for_each_mr(i) \
