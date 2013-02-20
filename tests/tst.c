@@ -25,6 +25,7 @@ static void push_pages(int fd, unsigned long n)
     struct unmap_data data;
     int k;
 
+    bzero(&data, sizeof data);
     data.dsm_id = 1;
     data.sz = PAGE_SIZE * n;
     for_each_mr (k) {

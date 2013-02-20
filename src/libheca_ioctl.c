@@ -2,11 +2,11 @@
  * Steve Walsh <steve.walsh@sap.com>
  */
 
-#include <linux/dsm.h>
+#include <linux/heca.h>
 #include "libheca_socket.h"
 #include "libheca_ioctl.h"
 
-#define DSM_CHRDEV  "/dev/rdma"
+#define DSM_CHRDEV  "/dev/heca"
 
 int heca_open(void)
 {

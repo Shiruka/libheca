@@ -9,7 +9,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "linux/dsm.h"
 #include "libheca.h"
 #include "config.h"
 

@@ -6,7 +6,7 @@
 #ifndef LIBHECA_IOCTL_H_
 #define LIBHECA_IOCTL_H_
 
-#include <linux/dsm.h>
+#include <linux/heca.h>
 
 #ifdef DEBUG
 #define DEBUG_PRINT(fmt, args...) \
