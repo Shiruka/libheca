@@ -78,8 +78,11 @@ static void compute(char *conf_name)
 
     /* alloc mem and connect */
     notify("[0] initialize: ");
-    for_each_mr (i)
+    for_each_mr (i) {
         mr_array[i].addr = valloc(PAGE_SIZE*NUM_PAGES);
+        /* uncomment this line to test COPY_ON_ACCESS feature */
+        //mr_array[i].flags |= UD_COPY_ON_ACCESS;
+    }
     fd = init_cvm(conf, mr_array, mr_count);
 
     /* test */
