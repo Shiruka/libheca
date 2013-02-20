@@ -5,6 +5,7 @@
 #ifndef LIBHECA_SOCKET_H_
 #define LIBHECA_SOCKET_H_
 
+#include <linux/heca.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -13,7 +14,6 @@
 #include <string.h>
 #include <signal.h>
 #include <pthread.h>
-#include <linux/dsm.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>

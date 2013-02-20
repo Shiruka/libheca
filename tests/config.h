@@ -5,8 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "linux/dsm.h"
-
 struct CONF {
     char *key;
     char *value;

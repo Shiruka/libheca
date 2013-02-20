@@ -20,6 +20,7 @@ int init_cvm(struct CONF *conf, struct unmap_data *mr_array, int mr_count)
 
     svm_count = config_get_ints(conf, svm_ids, svm_config, 3);
     for (i = 0, k =0; i < svm_count; i++) {
+        bzero(&svm_array[i], sizeof svm_array[i]);
         svm_array[i].dsm_id = 1;
         svm_array[i].svm_id = svm_ids[i];
         parse_svm_data(svm_config[i], &svm_array[i]);
@@ -39,6 +40,8 @@ int init_mvm(unsigned long sz, void *mem, struct CONF *conf, int mvm_id)
     struct sockaddr_in master_addr;
     char *cvm_data;
     struct svm_data cvm;
+
+    bzero(&cvm, sizeof cvm);
 
     cvm_data = config_get(conf, COMPUTE_ID_STR);
     assert(cvm_data);
