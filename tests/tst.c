@@ -37,38 +37,6 @@ static void push_pages(int fd, unsigned long n)
     }
 }
 
-static void provide(char *conf_name, int mvm_id, char c)
-{
-    struct CONF *conf;
-    unsigned long sz = PAGE_SIZE*NUM_PAGES*mr_count;
-    int fd, i;
-    void *mem;
-
-    conf = config_parse(conf_name);
-    assert(conf);
-
-    mem = valloc(sz);
-    assert(mem);
-    memset(mem, c, sz);
-    for_each_mr (i)
-        mr_array[i].addr = mem + (i * mr_array[i].sz);
-
-    printf("[0] initialize %d: ", mvm_id);
-    notify("");
-    fd = init_mvm(sz, mem, conf, mvm_id);
-
-    notify("[3] dirty pages:");
-    c = (mvm_id % 2)? 'd' : 'e';
-    dirty_pages(NUM_PUSHBACK, c);
-
-    notify("[6] dirty and print pages (2):");
-    dirty_pages(NUM_PUSHBACK, '2');
-    print_pages(NUM_PUSHBACK);
-
-    notify("[.]disconnect:\n");
-    heca_close(fd);
-}
-
 static void compute(char *conf_name)
 {
     int fd, i;
@@ -110,6 +78,38 @@ static void compute(char *conf_name)
     config_clean(conf);
     for_each_mr (i)
         free(mr_array[i].addr);
+}
+
+static void provide(char *conf_name, int mvm_id, char c)
+{
+    struct CONF *conf;
+    unsigned long sz = PAGE_SIZE*NUM_PAGES*mr_count;
+    int fd, i;
+    void *mem;
+
+    conf = config_parse(conf_name);
+    assert(conf);
+
+    mem = valloc(sz);
+    assert(mem);
+    memset(mem, c, sz);
+    for_each_mr (i)
+        mr_array[i].addr = mem + (i * mr_array[i].sz);
+
+    printf("[0] initialize %d: ", mvm_id);
+    notify("");
+    fd = init_mvm(sz, mem, conf, mvm_id);
+
+    notify("[3] dirty pages:");
+    c = (mvm_id % 2)? 'd' : 'e';
+    dirty_pages(NUM_PUSHBACK, c);
+
+    notify("[6] dirty and print pages (2):");
+    dirty_pages(NUM_PUSHBACK, '2');
+    print_pages(NUM_PUSHBACK);
+
+    notify("[.]disconnect:\n");
+    heca_close(fd);
 }
 
 static void print_usage(void)
