@@ -1,3 +1,9 @@
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "tst.h"
 
 static void print_pages(unsigned long n)
@@ -41,43 +47,98 @@ static void compute(char *conf_name)
 {
     int fd, i;
     struct CONF *conf;
+    pid_t child;
 
-    conf = config_parse(conf_name);
-    assert(conf);
+    fprintf(stderr, "Parent (%d): started\n", getpid());
 
     /* alloc mem and connect */
-    notify("[0] initialize: ");
     for_each_mr (i) {
         mr_array[i].addr = valloc(PAGE_SIZE*NUM_PAGES);
-        /* uncomment this line to test COPY_ON_ACCESS feature */
-        //mr_array[i].flags |= UD_COPY_ON_ACCESS;
+#if 0
+        mr_array[i].flags |= UD_COPY_ON_ACCESS;
+#endif
     }
-    fd = init_cvm(conf, mr_array, mr_count);
 
-    /* test */
-    notify("[1] pull all pages: ");
-    print_pages(NUM_PAGES);
+    if ((child = fork()) == -1) {
+        perror("fork error");
+        exit(1);
+    } else if (!child) {
+        int secs = 15;
 
-    notify("[2] push back pages:");
-    push_pages(fd, NUM_PUSHBACK);
+        fprintf(stderr, "Child (%d): started\n", getpid());
 
-    notify("[4] re-pull pages:");
-    print_pages(NUM_PUSHBACK);
+        fprintf(stderr, "Child: going to sleep for %d seconds ...\n", secs);
+        sleep(secs);
 
-    notify("[5] dirty and print pages (1):");
-    dirty_pages(NUM_PUSHBACK, '1');
-    print_pages(NUM_PUSHBACK);
+        notify("[1] pull all pages: ");
+        print_pages(NUM_PAGES);
 
-    notify("[7] dirty and print pages (3):");
-    dirty_pages(NUM_PUSHBACK, '3');
-    print_pages(NUM_PUSHBACK);
+#if 0
+        /* FIXME: this need to be done by the parent, but for this to work we
+         * have to establish some kind of IPC between parent/client to enable
+         * synchronization
+         */ 
+        notify("[2] push back pages:");
+        push_pages(fd, NUM_PUSHBACK);
+#endif
 
-    /* cleanup */
-    notify("[.] disconnect:\n");
+        notify("[4] re-pull pages:");
+        print_pages(NUM_PUSHBACK);
+
+        notify("[5] dirty and print pages (1):");
+        dirty_pages(NUM_PUSHBACK, '1');
+        print_pages(NUM_PUSHBACK);
+
+        notify("[7] dirty and print pages (3):");
+        dirty_pages(NUM_PUSHBACK, '3');
+        print_pages(NUM_PUSHBACK);
+
+        notify("[.] disconnect:\n");
+        fprintf(stderr, "Child (%d): ended\n", getpid());
+        exit(0);
+    }
+
+    printf("[0] initialize:\n");
+    conf = config_parse(conf_name);
+    assert(conf);
+    fd = init_cvm(child, conf, mr_array, mr_count);
+
+    fprintf(stderr, "Parent: completed HECA setup...\n");
+
+    /* parent */
+    while (1) {
+        int status;
+        pid_t end;
+
+        end = waitpid(child, &status, WNOHANG|WUNTRACED);
+        if (end == -1) {
+            perror("waitpid error");
+            exit(1);
+        }
+        else if (!end) {
+            /* child still running */
+            sleep(1);
+        }
+        else if (end == child) {
+            if (WIFEXITED(status))
+                printf("Child ended normally\n");
+            else if (WIFSIGNALED(status))
+                printf("Child ended because of an uncaught signal\n");
+            else if (WIFSTOPPED(status))
+                printf("Child process has stopped\n");
+            break;
+        }
+    }
+
+    fprintf(stderr, "Parent (%d): is back\n", getpid());
+
     heca_close(fd);
+
     config_clean(conf);
     for_each_mr (i)
         free(mr_array[i].addr);
+
+    fprintf(stderr, "Parent (%d): ended\n", getpid());
 }
 
 static void provide(char *conf_name, int mvm_id, char c)

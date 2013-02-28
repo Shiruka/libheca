@@ -15,7 +15,7 @@
 #define COMPUTE_ID 1
 #define COMPUTE_ID_STR "1"
 
-int init_cvm(struct CONF *, struct unmap_data *, int);
+int init_cvm(pid_t child, struct CONF *, struct unmap_data *, int);
 int init_mvm(unsigned long, void *, struct CONF *, int);
 
 #endif

@@ -268,12 +268,17 @@ int client_svm_count_recv(int sock, int *svm_count)
 
 int client_svm_array_recv(int sock, int svm_count, struct svm_data *svm_array)
 {
-    int n = read(sock, svm_array, svm_count * sizeof(struct svm_data));
-
+    int n, i;
+   
+    n = read(sock, svm_array, svm_count * sizeof(struct svm_data));
     if (n < 0) {
         DEBUG_ERROR("Could not read from socket");
         return n;
     }
+
+    for (i = 0; i < svm_count; i++)
+        svm_array[i].pid = 0; /* FIXME: master sent us local PID */
+
     return 0;
 }
 
@@ -347,13 +352,16 @@ int client_mr_count_recv(int sock, int *mr_count)
 int client_unmap_array_recv(int sock, int mr_count,
         struct unmap_data *unmap_array)
 {
-    int n;
+    int n, i;
 
     n = read(sock, unmap_array, mr_count * sizeof(struct unmap_data));
     if (n < 0) {
         DEBUG_ERROR("Could not read from socket"); 
         return n;
     }
+
+    for (i = 0; i < mr_count; i++)
+        unmap_array[i].pid = 0; /* FIXME: master sent us local PID */
     return 0;
 }
 
