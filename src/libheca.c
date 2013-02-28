@@ -3,7 +3,7 @@
  */
 
 #include "libheca.h"
-#include "libheca_socket.h"
+#include "socket.h"
 
 int heca_master_open(int svm_count, struct svm_data *svm_array, int mr_count,
     struct unmap_data *mr_array)

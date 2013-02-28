@@ -3,8 +3,8 @@
  */
 
 #include <linux/heca.h>
-#include "libheca_socket.h"
-#include "libheca_ioctl.h"
+#include "socket.h"
+#include "ioctl.h"
 
 #define DSM_CHRDEV  "/dev/heca"
 

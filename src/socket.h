@@ -2,8 +2,8 @@
  * Steve Walsh <steve.walsh@sap.com>
  */
 
-#ifndef LIBHECA_SOCKET_H_
-#define LIBHECA_SOCKET_H_
+#ifndef SOCKET_H_
+#define SOCKET_H_
 
 #include <linux/heca.h>
 #include <stdlib.h>
@@ -66,5 +66,5 @@ int heca_client_memory_mapped(int sock);
 int heca_client_assign_mem(void *dsm_mem, unsigned long dsm_mem_sz, int mr_count,
         struct unmap_data *mr_array);
 
-#endif /* LIBHECA_SOCKET_H_ */
+#endif /* SOCKET_H_ */
 
