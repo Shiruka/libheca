@@ -8,12 +8,10 @@
 #ifndef LIBHECA_H_
 #define LIBHECA_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <netinet/in.h>
 #include <linux/heca.h>
+
+__BEGIN_DECLS
 
 int heca_open(void);
 
@@ -45,9 +43,7 @@ int heca_master_open(int svm_count, struct svm_data *svm_array, int mr_count,
 int heca_client_open(void *dsm_mem, unsigned long dsm_mem_sz, int local_svm_id,
         struct sockaddr_in *master_addr);
 
-#ifdef __cplusplus
-}
-#endif
+__END_DECLS
 
 #endif /* LIBHECA_H_ */
 
