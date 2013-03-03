@@ -1,5 +1,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/file.h>
 #include <unistd.h>
 #include <time.h>
 #include <stdio.h>
@@ -26,7 +27,7 @@ static void dirty_pages(unsigned long n, char c)
         memset(mr_array[i].addr, c, n*PAGE_SIZE);
 }
 
-static void push_pages(int fd, unsigned long n)
+static void push_pages(pid_t child, int fd, unsigned long n)
 {
     struct unmap_data data;
     int k;
@@ -34,6 +35,7 @@ static void push_pages(int fd, unsigned long n)
     bzero(&data, sizeof data);
     data.dsm_id = 1;
     data.sz = PAGE_SIZE * n;
+    data.pid = child;
     for_each_mr (k) {
         int j;
         data.addr = mr_array[k].addr;
@@ -45,13 +47,13 @@ static void push_pages(int fd, unsigned long n)
 
 static void compute(char *conf_name)
 {
-    int fd, i;
-    struct CONF *conf;
+    int fd = -1, i, lockfd = -1, rc;
+    struct CONF *conf = NULL;
     pid_t child;
+    const char *lockfn = "/tmp/tst.lock";
 
     fprintf(stderr, "Parent (%d): started\n", getpid());
 
-    /* alloc mem and connect */
     for_each_mr (i) {
         mr_array[i].addr = valloc(PAGE_SIZE*NUM_PAGES);
 #if 0
@@ -61,26 +63,36 @@ static void compute(char *conf_name)
 
     if ((child = fork()) == -1) {
         perror("fork error");
-        exit(1);
+        goto failure;
     } else if (!child) {
-        int secs = 15;
+        if ((lockfd = open(lockfn, O_RDWR|O_CREAT|O_APPEND, 0666)) < 0) {
+            perror("open");
+            goto failure;
+        }
 
         fprintf(stderr, "Child (%d): started\n", getpid());
 
-        fprintf(stderr, "Child: going to sleep for %d seconds ...\n", secs);
-        sleep(secs);
+        sleep(2);
+
+        if (flock(lockfd, LOCK_EX) < 0) {
+            perror("flock");
+            goto failure;
+        }
 
         notify("[1] pull all pages: ");
         print_pages(NUM_PAGES);
 
-#if 0
-        /* FIXME: this need to be done by the parent, but for this to work we
-         * have to establish some kind of IPC between parent/client to enable
-         * synchronization
-         */ 
-        notify("[2] push back pages:");
-        push_pages(fd, NUM_PUSHBACK);
-#endif
+        if (flock(lockfd, LOCK_UN) < 0) {
+            perror("flock");
+            goto failure;
+        }
+
+        sleep(1);
+
+        if (flock(lockfd, LOCK_EX) < 0) {
+            perror("flock");
+            goto failure;
+        }
 
         notify("[4] re-pull pages:");
         print_pages(NUM_PUSHBACK);
@@ -95,15 +107,54 @@ static void compute(char *conf_name)
 
         notify("[.] disconnect:\n");
         fprintf(stderr, "Child (%d): ended\n", getpid());
-        exit(0);
+
+        if (flock(lockfd, LOCK_UN) < 0) {
+            perror("flock");
+            goto failure;
+        }
+
+        goto done;
     }
 
-    printf("[0] initialize:\n");
+    sleep(1);
+
+    if ((lockfd = open(lockfn, O_RDWR|O_CREAT|O_APPEND, 0666)) < 0) {
+        perror("open");
+        goto failure;
+    }
+
+    if (flock(lockfd, LOCK_EX) < 0) {
+        perror("flock");
+        goto failure;
+    }
+
+    fprintf(stderr, "[0] initialize:\n");
+
     conf = config_parse(conf_name);
     assert(conf);
     fd = init_cvm(child, conf, mr_array, mr_count);
 
     fprintf(stderr, "Parent: completed HECA setup...\n");
+
+    if (flock(lockfd, LOCK_UN) < 0) {
+        perror("flock");
+        goto failure;
+    }
+
+    sleep(1);
+
+    if (flock(lockfd, LOCK_EX) < 0) {
+        perror("flock");
+        goto failure;
+    }
+
+    notify("[2] push back pages:");
+    push_pages(child, fd, NUM_PUSHBACK);
+
+    if (flock(lockfd, LOCK_UN) < 0) {
+        perror("flock");
+        goto failure;
+    }
 
     /* parent */
     while (1) {
@@ -113,7 +164,7 @@ static void compute(char *conf_name)
         end = waitpid(child, &status, WNOHANG|WUNTRACED);
         if (end == -1) {
             perror("waitpid error");
-            exit(1);
+            goto failure;
         }
         else if (!end) {
             /* child still running */
@@ -132,13 +183,25 @@ static void compute(char *conf_name)
 
     fprintf(stderr, "Parent (%d): is back\n", getpid());
 
-    heca_close(fd);
-
-    config_clean(conf);
-    for_each_mr (i)
-        free(mr_array[i].addr);
-
     fprintf(stderr, "Parent (%d): ended\n", getpid());
+    rc = 0;
+    goto done;
+
+failure:
+    rc = 1;
+
+done:
+    if (conf)
+        config_clean(conf);
+    for_each_mr (i) {
+        free(mr_array[i].addr);
+        mr_array[i].addr = 0;
+    }
+    if (lockfd != -1)
+        close(lockfd);
+    if (fd != -1)
+        heca_close(fd);
+    exit(rc);
 }
 
 static void provide(char *conf_name, int mvm_id, char c)
