@@ -1,15 +1,16 @@
 /*
  * Steve Walsh <steve.walsh@sap.com>
+ * Aidan Shribman <aidan.shribman@sap.com>
  */
 
 #include "libheca.h"
 #include "socket.h"
 
-int heca_master_open(int svm_count, struct svm_data *svm_array, int mr_count,
+int heca_master_open(int svm_count, struct hecaioc_svm *svm_array, int mr_count,
     struct unmap_data *mr_array)
 {
     int fd, ret;
-    struct svm_data *local_svm;
+    struct hecaioc_svm *local_svm;
     struct client_connect_info *clients = NULL;
 
     local_svm = svm_array_init(svm_count, svm_array, MASTER_SVM_ID);
@@ -56,8 +57,8 @@ int heca_client_open(void *dsm_mem, unsigned long dsm_mem_sz, int local_svm_id,
         struct sockaddr_in *master_addr)
 {
     int sock, svm_count, fd, ret, mr_count;
-    struct svm_data *local_svm;
-    struct svm_data *svm_array;
+    struct hecaioc_svm *local_svm;
+    struct hecaioc_svm *svm_array;
     struct unmap_data *mr_array;
 
     /* initial handshake, receive cluster data */
@@ -69,7 +70,7 @@ int heca_client_open(void *dsm_mem, unsigned long dsm_mem_sz, int local_svm_id,
     if ( ret < 0)
         goto return_error;
 
-    svm_array = calloc(svm_count, sizeof(struct svm_data));
+    svm_array = calloc(svm_count, sizeof(*local_svm));
 
     ret = client_svm_array_recv(sock, svm_count, svm_array);
     if ( ret < 0)

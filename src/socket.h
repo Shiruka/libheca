@@ -25,8 +25,8 @@
 #define MASTER_SVM_ID 1
 
 /* helper functions */
-struct svm_data *svm_array_init(int svm_count,
-        struct svm_data *svm_array, int local_svm_id);
+struct hecaioc_svm *svm_array_init(int svm_count,
+        struct hecaioc_svm *svm_array, int local_svm_id);
 
 /* master functions */
 struct client_connect_info {
@@ -37,10 +37,10 @@ struct client_connect_info {
 
 void master_open(int svm_count, struct client_connect_info *clients);
 
-int master_clients_register(int svm_count, struct svm_data* svm_array,
+int master_clients_register(int svm_count, struct hecaioc_svm *svm_array,
         struct client_connect_info *clients);
 
-int master_clients_connect(int svm_count, struct svm_data *svm_array,
+int master_clients_connect(int svm_count, struct hecaioc_svm *svm_array,
         struct client_connect_info *clients);
 
 int master_clients_mmap(int svm_count, int mr_count,
@@ -53,12 +53,13 @@ int client_connect(struct sockaddr_in *master_addr, int svm_id);
 
 int client_svm_count_recv(int sock, int *svm_count);
 
-int client_svm_array_recv(int sock, int svm_count, struct svm_data *svm_array);
+int client_svm_array_recv(int sock, int svm_count, struct hecaioc_svm
+        *svm_array);
 
 int client_register_ack(int sock);
 
 int client_svm_add(int sock, int fd, int local_svm_id, int svm_count,
-        struct svm_data *svm_array);
+        struct hecaioc_svm *svm_array);
 
 int client_mr_count_recv(int sock, int *mr_count);
 

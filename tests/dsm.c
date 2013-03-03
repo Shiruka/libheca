@@ -1,14 +1,14 @@
 #include "dsm.h"
 
-static void parse_svm_data(char *s, struct svm_data *svm)
+static void parse_svm_data(char *s, struct hecaioc_svm *svm)
 {
     char *ptr = strstr(s, ":");
     
     *ptr = 0;
 
-    svm->server.sin_family = AF_INET;
-    svm->server.sin_addr.s_addr = inet_addr(s);
-    svm->server.sin_port = htons(atoi(ptr+1));
+    svm->remote.sin_family = AF_INET;
+    svm->remote.sin_addr.s_addr = inet_addr(s);
+    svm->remote.sin_port = htons(atoi(ptr+1));
 }
 
 /* parse up to three svm data and pass to dsm */
@@ -17,7 +17,7 @@ int init_cvm(pid_t child, struct CONF *conf, struct unmap_data *mr_array,
 {
     int i, j, k, svm_count, svm_ids[3];
     char *svm_config[3];
-    struct svm_data svm_array[3];
+    struct hecaioc_svm svm_array[3];
 
     svm_count = config_get_ints(conf, svm_ids, svm_config, 3);
     for (i = 0, k =0; i < svm_count; i++) {
@@ -43,7 +43,7 @@ int init_mvm(unsigned long sz, void *mem, struct CONF *conf, int mvm_id)
 {
     struct sockaddr_in master_addr;
     char *cvm_data;
-    struct svm_data cvm;
+    struct hecaioc_svm cvm;
 
     bzero(&cvm, sizeof cvm);
 
@@ -53,7 +53,7 @@ int init_mvm(unsigned long sz, void *mem, struct CONF *conf, int mvm_id)
 
     master_addr.sin_family = AF_INET;
     master_addr.sin_port = htons(4445);
-    master_addr.sin_addr.s_addr = cvm.server.sin_addr.s_addr;
+    master_addr.sin_addr.s_addr = cvm.remote.sin_addr.s_addr;
 
     return heca_client_open(mem, sz, mvm_id, &master_addr);
 }

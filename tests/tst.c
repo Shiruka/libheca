@@ -105,6 +105,18 @@ static void compute(char *conf_name)
         dirty_pages(NUM_PUSHBACK, '3');
         print_pages(NUM_PUSHBACK);
 
+        if (flock(lockfd, LOCK_UN) < 0) {
+            perror("flock");
+            goto failure;
+        }
+
+        sleep(1);
+
+        if (flock(lockfd, LOCK_EX) < 0) {
+            perror("flock");
+            goto failure;
+        }
+
         notify("[.] disconnect:\n");
         fprintf(stderr, "Child (%d): ended\n", getpid());
 
@@ -156,6 +168,20 @@ static void compute(char *conf_name)
         goto failure;
     }
 
+    sleep(1);
+
+    if (flock(lockfd, LOCK_EX) < 0) {
+        perror("flock");
+        goto failure;
+    }
+
+    heca_close(fd);
+
+    if (flock(lockfd, LOCK_UN) < 0) {
+        perror("flock");
+        goto failure;
+    }
+
     /* parent */
     while (1) {
         int status;
@@ -199,8 +225,6 @@ done:
     }
     if (lockfd != -1)
         close(lockfd);
-    if (fd != -1)
-        heca_close(fd);
     exit(rc);
 }
 

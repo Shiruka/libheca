@@ -92,7 +92,7 @@ void master_open(int svm_count, struct client_connect_info *clients)
 }
 
 /* wait for clients to register */
-int master_clients_register(int svm_count, struct svm_data *svm_array,
+int master_clients_register(int svm_count, struct hecaioc_svm *svm_array,
         struct client_connect_info *clients)
 {  
     int i, client_count, n, ack;    
@@ -107,7 +107,7 @@ int master_clients_register(int svm_count, struct svm_data *svm_array,
         }
 
         n = write(clients[i].client_sock, svm_array,
-                svm_count * sizeof(struct svm_data));
+                svm_count * sizeof(*svm_array));
         if (n <  0) {
             DEBUG_ERROR("Could not write to socket");
             return -1;
@@ -128,7 +128,7 @@ int master_clients_register(int svm_count, struct svm_data *svm_array,
 }
 
 /* wait for clients to connect */
-int master_clients_connect(int svm_count, struct svm_data *svm_array,
+int master_clients_connect(int svm_count, struct hecaioc_svm *svm_array,
         struct client_connect_info *clients)
 {
     int i, client_count, sig, n, ack;
@@ -266,11 +266,12 @@ int client_svm_count_recv(int sock, int *svm_count)
     return 0;
 }
 
-int client_svm_array_recv(int sock, int svm_count, struct svm_data *svm_array)
+int client_svm_array_recv(int sock, int svm_count,
+        struct hecaioc_svm *svm_array)
 {
     int n, i;
    
-    n = read(sock, svm_array, svm_count * sizeof(struct svm_data));
+    n = read(sock, svm_array, svm_count * sizeof(*svm_array));
     if (n < 0) {
         DEBUG_ERROR("Could not read from socket");
         return n;
@@ -295,8 +296,8 @@ int client_register_ack(int sock)
     return 0;
 }
 
-struct svm_data *svm_array_init(int svm_count,
-        struct svm_data *svm_array, int local_svm_id)
+struct hecaioc_svm *svm_array_init(int svm_count,
+        struct hecaioc_svm *svm_array, int local_svm_id)
 {
     int i;
 
@@ -307,7 +308,7 @@ struct svm_data *svm_array_init(int svm_count,
 }
 
 int client_svm_add(int sock, int fd, int local_svm_id, int svm_count,
-        struct svm_data *svm_array)
+        struct hecaioc_svm *svm_array)
 {
     int n, sig, ret;
 

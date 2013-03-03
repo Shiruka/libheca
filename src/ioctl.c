@@ -22,12 +22,16 @@ int heca_open(void)
     return fd;
 }
 
-int heca_dsm_init(int fd, struct svm_data *local_svm) 
+int heca_dsm_init(int fd, struct hecaioc_svm *local_svm) 
 {
     int rc;
+    struct hecaioc_dsm dsm;
+
+    dsm.dsm_id = local_svm->dsm_id;
+    dsm.local = local_svm->remote;
 
     DEBUG_PRINT("HECAIOC_DSM_INIT system call\n");
-    rc = ioctl(fd, HECAIOC_DSM_INIT, local_svm);
+    rc = ioctl(fd, HECAIOC_DSM_INIT, &dsm);
     if (rc) {
         DEBUG_ERROR("HECAIOC_DSM_INIT");
         return -1;
@@ -43,10 +47,10 @@ int heca_dsm_init(int fd, struct svm_data *local_svm)
 }
 
 int heca_svm_add(int fd, int local_svm_id, int svm_count,
-        struct svm_data *svm_array)
+        struct hecaioc_svm *svm_array)
 {
     int i, rc;
-    struct svm_data *svm;
+    struct hecaioc_svm *svm;
     
     for (i = 0; i < svm_count; i++) {
         
