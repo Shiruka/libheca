@@ -25,7 +25,7 @@ build: $(TARGET)
 
 .PHONY: build
 
-install: $(libheca_LIB)
+install: $(libheca_LIB) $(libheca_INC)
 	install $(libheca_INC) /usr/include/
 	install $(libheca_LIB) /usr/lib/
 	ln -sf /usr/lib/$(libheca_LIB) /usr/lib/$(libheca_LIB).1

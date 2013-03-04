@@ -29,7 +29,6 @@ int init_cvm(pid_t child, struct CONF *conf, struct hecaioc_mr *mr_array,
         if (svm_array[i].svm_id != COMPUTE_ID) {
             for (j = 0; j < mr_count; j++) {
                 mr_array[j].svm_ids[k] = svm_array[i].svm_id;
-                mr_array[j].pid = child;
             }
             k++;
         }

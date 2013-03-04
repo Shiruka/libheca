@@ -353,7 +353,7 @@ int client_mr_count_recv(int sock, int *mr_count)
 int client_unmap_array_recv(int sock, int mr_count,
         struct hecaioc_mr *unmap_array)
 {
-    int n, i;
+    int n;
 
     n = read(sock, unmap_array, mr_count * sizeof(*unmap_array));
     if (n < 0) {
@@ -361,8 +361,6 @@ int client_unmap_array_recv(int sock, int mr_count,
         return n;
     }
 
-    for (i = 0; i < mr_count; i++)
-        unmap_array[i].pid = 0; /* FIXME: master sent us local PID */
     return 0;
 }
 
