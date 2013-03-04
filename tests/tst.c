@@ -29,19 +29,18 @@ static void dirty_pages(unsigned long n, char c)
 
 static void push_pages(pid_t child, int fd, unsigned long n)
 {
-    struct unmap_data data;
+    struct hecaioc_ps data;
     int k;
 
     bzero(&data, sizeof data);
-    data.dsm_id = 1;
     data.sz = PAGE_SIZE * n;
     data.pid = child;
     for_each_mr (k) {
         int j;
         data.addr = mr_array[k].addr;
-        j = heca_mr_pushback(fd, 1, &data);
+        j = heca_ps_pushback(fd, 1, &data);
         if (j)
-            printf("mr[%d] error in HECAIOC_MR_PUSHBACK: %d\n", k, j);
+            printf("mr[%d] error in HECAIOC_PS_PUSHBACK: %d\n", k, j);
     }
 }
 
@@ -145,6 +144,10 @@ static void compute(char *conf_name)
     conf = config_parse(conf_name);
     assert(conf);
     fd = init_cvm(child, conf, mr_array, mr_count);
+    if (fd < 0) {
+        fprintf(stderr, "can't open /dev/heca\n");
+        goto failure;
+    }
 
     fprintf(stderr, "Parent: completed HECA setup...\n");
 
@@ -247,6 +250,10 @@ static void provide(char *conf_name, int mvm_id, char c)
     printf("[0] initialize %d: ", mvm_id);
     notify("");
     fd = init_mvm(sz, mem, conf, mvm_id);
+    if (fd < 0) {
+        fprintf(stderr, "can't open /dev/heca\n");
+        return;
+    }
 
     notify("[3] dirty pages:");
     c = (mvm_id % 2)? 'd' : 'e';

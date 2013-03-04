@@ -69,10 +69,10 @@ int heca_svm_add(int fd, int local_svm_id, int svm_count,
     return 0;
 }
 
-int heca_mr_add(int fd, int mr_count, struct unmap_data *unmap_array)
+int heca_mr_add(int fd, int mr_count, struct hecaioc_mr *unmap_array)
 {
     int i, rc = 0;
-    struct unmap_data mr;
+    struct hecaioc_mr mr;
 
     for (i = 0; i < mr_count; i++) {
         mr = unmap_array[i];
@@ -87,18 +87,18 @@ int heca_mr_add(int fd, int mr_count, struct unmap_data *unmap_array)
     return 0;
 }
 
-int heca_mr_pushback(int fd, int mr_count, struct unmap_data *unmap_array)
+int heca_ps_pushback(int fd, int count, struct hecaioc_ps *array)
 {
     int i, rc = 0;
-    struct unmap_data mr;
+    struct hecaioc_ps ps;
 
-    for (i = 0; i < mr_count; i++) {
-        mr = unmap_array[i];
+    for (i = 0; i < count; i++) {
+        ps = array[i];
 
-        DEBUG_PRINT("HECAIOC_MR_PUSHBACK system call\n");
-        rc = ioctl(fd, HECAIOC_MR_PUSHBACK, &mr);
+        DEBUG_PRINT("HECAIOC_PS_PUSHBACK system call\n");
+        rc = ioctl(fd, HECAIOC_PS_PUSHBACK, &ps);
         if (rc < 0) {
-            DEBUG_ERROR("HECAIOC_MR_PUSHBACK");
+            DEBUG_ERROR("HECAIOC_PS_PUSHBACK");
             return rc;
         }
     }

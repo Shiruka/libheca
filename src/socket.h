@@ -44,7 +44,7 @@ int master_clients_connect(int svm_count, struct hecaioc_svm *svm_array,
         struct client_connect_info *clients);
 
 int master_clients_mmap(int svm_count, int mr_count,
-        struct unmap_data *unmap_array, struct client_connect_info *clients);
+        struct hecaioc_mr *unmap_array, struct client_connect_info *clients);
 
 void master_close(int svm_count, struct client_connect_info *clients);
 
@@ -64,12 +64,12 @@ int client_svm_add(int sock, int fd, int local_svm_id, int svm_count,
 int client_mr_count_recv(int sock, int *mr_count);
 
 int client_unmap_array_recv(int sock, int svm_count,
-        struct unmap_data *unmap_array);
+        struct hecaioc_mr *unmap_array);
 
 int client_mmap_ack(int sock);
 
 int client_assign_mem(void *dsm_mem, unsigned long dsm_mem_sz, int mr_count,
-        struct unmap_data *mr_array);
+        struct hecaioc_mr *mr_array);
 
 #endif /* SOCKET_H_ */
 

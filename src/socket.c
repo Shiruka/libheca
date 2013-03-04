@@ -161,7 +161,7 @@ int master_clients_connect(int svm_count, struct hecaioc_svm *svm_array,
 
 /* client maps its valloc()ed memory into memory regions */
 int client_assign_mem(void *dsm_mem, unsigned long dsm_mem_sz, int mr_count,
-        struct unmap_data *mr_array)
+        struct hecaioc_mr *mr_array)
 {
     int i;
     void *pos = dsm_mem;
@@ -181,7 +181,7 @@ int client_assign_mem(void *dsm_mem, unsigned long dsm_mem_sz, int mr_count,
 /* wait for clients to register memory regions */
 /* FIXME: erase unneeded local pointers on unmap_array */
 int master_clients_mmap(int svm_count, int mr_count,
-        struct unmap_data *unmap_array, struct client_connect_info *clients)
+        struct hecaioc_mr *unmap_array, struct client_connect_info *clients)
 {
     int i, client_count, n, ack_sig;
     client_count = svm_count - 1;
@@ -197,7 +197,7 @@ int master_clients_mmap(int svm_count, int mr_count,
         }
         
         n = write(clients[i].client_sock, unmap_array,
-                mr_count * sizeof(struct unmap_data));
+                mr_count * sizeof(struct hecaioc_mr));
         if (n <  0) {
             DEBUG_ERROR("Could not write to socket");
             return n;
@@ -351,11 +351,11 @@ int client_mr_count_recv(int sock, int *mr_count)
 }
 
 int client_unmap_array_recv(int sock, int mr_count,
-        struct unmap_data *unmap_array)
+        struct hecaioc_mr *unmap_array)
 {
     int n, i;
 
-    n = read(sock, unmap_array, mr_count * sizeof(struct unmap_data));
+    n = read(sock, unmap_array, mr_count * sizeof(*unmap_array));
     if (n < 0) {
         DEBUG_ERROR("Could not read from socket"); 
         return n;

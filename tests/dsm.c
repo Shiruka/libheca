@@ -12,7 +12,7 @@ static void parse_svm_data(char *s, struct hecaioc_svm *svm)
 }
 
 /* parse up to three svm data and pass to dsm */
-int init_cvm(pid_t child, struct CONF *conf, struct unmap_data *mr_array,
+int init_cvm(pid_t child, struct CONF *conf, struct hecaioc_mr *mr_array,
         int mr_count)
 {
     int i, j, k, svm_count, svm_ids[3];

@@ -21,13 +21,13 @@
 #define NUM_PAGES (25 * SCALE_FACTOR)
 #define NUM_PUSHBACK SCALE_FACTOR
 
-static struct unmap_data mr_array[] = {
+static struct hecaioc_mr mr_array[] = {
     {.mr_id = 1, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES, .flags = UD_AUTO_UNMAP},
     {.mr_id = 2, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES, .flags = UD_AUTO_UNMAP},
     {.mr_id = 3, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES, .flags = UD_AUTO_UNMAP},
     {.mr_id = 4, .dsm_id = 1, .sz = PAGE_SIZE*NUM_PAGES, .flags = UD_AUTO_UNMAP},
 };
-static int mr_count = sizeof(mr_array) / sizeof(struct unmap_data);
+static int mr_count = sizeof(mr_array) / sizeof(*mr_array);
 #define for_each_mr(i) \
     for (i = 0; i < mr_count; i++)
 

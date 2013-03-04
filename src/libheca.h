@@ -22,9 +22,9 @@ int heca_dsm_init(int fd, struct hecaioc_svm *local_svm);
 int heca_svm_add(int fd, int local_svm_id, int svm_count,
         struct hecaioc_svm *svm_array);
 
-int heca_mr_add(int fd, int mr_count, struct unmap_data *unmap_array);
+int heca_mr_add(int fd, int mr_count, struct hecaioc_mr *unmap_array);
 
-int heca_mr_pushback(int fd, int mr_count, struct unmap_data *unmap_array);
+int heca_ps_pushback(int fd, int count, struct hecaioc_ps *array);
 
 /*
     heca_master_open: initializes the master node for a heca connection. The
@@ -35,7 +35,7 @@ int heca_mr_pushback(int fd, int mr_count, struct unmap_data *unmap_array);
     known about the system.
  */
 int heca_master_open(int svm_count, struct hecaioc_svm *svm_array, int mr_count,
-        struct unmap_data *mr_array);
+        struct hecaioc_mr *mr_array);
 
 /* 
     heca_client_open: initializes the client node for a heca connection. 
