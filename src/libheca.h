@@ -17,7 +17,7 @@ int heca_open(void);
 
 void heca_close(int fd);
 
-int heca_dsm_init(int fd, struct hecaioc_svm *local_svm);
+int heca_dsm_add(int fd, struct hecaioc_svm *local_svm);
 
 int heca_svm_add(int fd, int local_svm_id, int svm_count,
         struct hecaioc_svm *svm_array);

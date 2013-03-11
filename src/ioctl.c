@@ -3,6 +3,7 @@
  */
 
 #include <linux/heca.h>
+#include <assert.h>
 #include "socket.h"
 #include "ioctl.h"
 
@@ -22,20 +23,30 @@ int heca_open(void)
     return fd;
 }
 
-int heca_dsm_init(int fd, struct hecaioc_svm *local_svm) 
+/* 
+ * HACK: static_dsm_id is used to maintain existing behavioir of libheca (in
+ * which the dsm is automatically removed when FD is closed).
+ */
+static __u32 static_dsm_id;
+
+int heca_dsm_add(int fd, struct hecaioc_svm *local_svm) 
 {
     int rc;
     struct hecaioc_dsm dsm;
 
+    assert(!static_dsm_id);
+
     dsm.dsm_id = local_svm->dsm_id;
     dsm.local = local_svm->remote;
 
-    DEBUG_PRINT("HECAIOC_DSM_INIT system call\n");
-    rc = ioctl(fd, HECAIOC_DSM_INIT, &dsm);
+    DEBUG_PRINT("HECAIOC_DSM_ADD system call\n");
+    rc = ioctl(fd, HECAIOC_DSM_ADD, &dsm);
     if (rc) {
         DEBUG_ERROR("HECAIOC_DSM_INIT");
         return -1;
     }
+    static_dsm_id = dsm.dsm_id;
+
     DEBUG_PRINT("HECAIOC_SVM_ADD (local) system call\n");
     rc = ioctl(fd, HECAIOC_SVM_ADD, local_svm);
     if (rc) {
@@ -107,6 +118,15 @@ int heca_ps_pushback(int fd, int count, struct hecaioc_ps *array)
 
 void heca_close(int fd)
 {
+    struct hecaioc_dsm dsm = {
+        .dsm_id = static_dsm_id,
+    };
+
+    assert(static_dsm_id);
+    DEBUG_PRINT("HECAIOC_DSM_RM system call\n");
+    if (ioctl(fd, HECAIOC_DSM_RM, &dsm))
+        DEBUG_ERROR("HECAIOC_DSM_RM");
     close(fd);
+    static_dsm_id = 0;
 }
 
