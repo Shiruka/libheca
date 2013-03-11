@@ -171,20 +171,6 @@ static void compute(char *conf_name)
         goto failure;
     }
 
-    sleep(1);
-
-    if (flock(lockfd, LOCK_EX) < 0) {
-        perror("flock");
-        goto failure;
-    }
-
-    heca_close(fd);
-
-    if (flock(lockfd, LOCK_UN) < 0) {
-        perror("flock");
-        goto failure;
-    }
-
     /* parent */
     while (1) {
         int status;
@@ -212,13 +198,17 @@ static void compute(char *conf_name)
 
     fprintf(stderr, "Parent (%d): is back\n", getpid());
 
+    notify("[X] parent will now close /dev/heca");
+    heca_close(fd);
+    fd = -1;
     fprintf(stderr, "Parent (%d): ended\n", getpid());
+
     rc = 0;
     goto done;
 
+    /* child/parent cleanup */
 failure:
     rc = 1;
-
 done:
     if (conf)
         config_clean(conf);
