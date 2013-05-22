@@ -14,7 +14,13 @@ poc_BIN := poc
 poc_CFLAGS := $(CFLAGS) -I. -I$(libheca_DIR)
 poc_LDFLAGS := $(LDFLAGS) -L$(libheca_DIR) -lheca -lm
 
-all: $(tst_BIN) $(poc_BIN)
+ccpoc_SRC := cc-poc.c config.c dsm.c
+ccpoc_INC := config.h dsm.h cc-poc.h
+ccpoc_BIN := cc-poc
+ccpoc_CFLAGS := $(CFLAGS) -I. -I$(libheca_DIR)
+ccpoc_LDFLAGS := $(LDFLAGS) -L$(libheca_DIR) -lheca -lm
+
+all: $(tst_BIN) $(poc_BIN) $(ccpoc_BIN)
 
 .PHONY: all
 
@@ -31,6 +37,11 @@ $(poc_BIN): $(poc_SRC) $(poc_INC)
 	$(CC) $(poc_CFLAGS) $(poc_SRC) -o $@ $(poc_LDFLAGS)
 
 CLEAN += $(poc_BIN)
+
+$(ccpoc_BIN): $(ccpoc_SRC) $(ccpoc_INC)
+	$(CC) $(ccpoc_CFLAGS) $(ccpoc_SRC) -o $@ $(ccpoc_LDFLAGS)
+
+CLEAN += $(ccpoc_BIN)
 
 clean:
 	rm -rf $(CLEAN)

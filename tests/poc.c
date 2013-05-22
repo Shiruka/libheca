@@ -46,7 +46,7 @@ static void compute(unsigned long sz, char *conf_name)
     assert(mem);
     if (conf) {
         struct hecaioc_mr mr_array = {.mr_id=1,.dsm_id=1,.sz=sz,.addr=mem};
-        fd = init_cvm(0, conf, &mr_array, 1);
+        fd = init_cvm(0, conf, &mr_array, 1, 1);
     }
     /* payload: configurable in the future */
     payload = quicksort;

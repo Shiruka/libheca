@@ -143,7 +143,7 @@ static void compute(char *conf_name)
 
     conf = config_parse(conf_name);
     assert(conf);
-    fd = init_cvm(child, conf, mr_array, mr_count);
+    fd = init_cvm(child, conf, mr_array, mr_count, 1);
     if (fd < 0) {
         fprintf(stderr, "can't open /dev/heca\n");
         goto failure;
