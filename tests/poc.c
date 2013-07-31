@@ -45,7 +45,7 @@ static void compute(unsigned long sz, char *conf_name)
     mem = valloc(sz);
     assert(mem);
     if (conf) {
-        struct hecaioc_mr mr_array = {.mr_id=1,.dsm_id=1,.sz=sz,.addr=mem};
+        struct hecaioc_mr mr_array = {.mr_id=1,.dsm_id=1,.sz=sz,.addr=mem,.flags=UD_AUTO_UNMAP|UD_SHARED};
         fd = init_cvm(0, conf, &mr_array, 1, 1);
     }
     /* payload: configurable in the future */
