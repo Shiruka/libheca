@@ -2,37 +2,20 @@
  * Steve Walsh <steve.walsh@sap.com>
  */
 
-#include "dsm_init.h"
+#include "libheca.h"
+#include "socket.h"
+#include "ioctl.h"
 
-int dsm_register(struct svm_data *local_svm) 
-{
-    int rc, fd;
-   
-    fd = open(DSM_CHRDEV, O_RDWR);
-    int optval = 1;
-    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &optval, 4);
-    if (fd < 0) {
-        DEBUG_ERROR("Could not open DSM_CHRDEV");
-        return -1;
-    }
+#define TCP_SIGNAL_SOCKET_PORT 4445
 
-    DEBUG_PRINT("DSM_DSM system call\n");
-    rc = ioctl(fd, DSM_DSM, local_svm);
-    if (rc) {
-        DEBUG_ERROR("DSM_DSM");
-        return -1;
-    }
-    DEBUG_PRINT("DSM_SVM (local) system call\n");
-    rc = ioctl(fd, DSM_SVM, local_svm);
-    if (rc) {
-        DEBUG_ERROR("DSM_SVM (local)");
-        return -1;
-    }
-    
-    return fd;
-}
+enum Signals {
+    CLIENT_REGISTERED = 100, 
+    CLIENT_CONNECT,
+    CLIENT_CONNECTED,
+    CLIENT_MEMORY_MAPPED
+};
 
-static int get_listening_socket(int client_count)
+static int master_listen(int client_count)
 {
     int sockfd;
     struct sockaddr_in serv_addr;
@@ -59,7 +42,7 @@ static int get_listening_socket(int client_count)
     return sockfd;
 }
 
-static void * client_socket_init(void *arg)
+static void *master_handshake_per_client(void *arg)
 {
     int client_sock, n, svm_id;
     struct sockaddr_in cli_addr;     
@@ -73,7 +56,7 @@ static void * client_socket_init(void *arg)
     DEBUG_PRINT("Waiting for client connection...\n");
     client_sock = accept(*(client->master_sock), (struct sockaddr*) &cli_addr, &clilen);
     if (client_sock < 0) 
-        DEBUG_ERROR("DSM_DSM");
+        DEBUG_ERROR("HECAIOC_DSM_INIT");
             
     /* backup socket connection */
     client->client_sock = client_sock;
@@ -86,17 +69,18 @@ static void * client_socket_init(void *arg)
     return ret;
 }
 
-void clients_sockets_init(int svm_count, struct client_connect_info *clients)
+void master_open(int svm_count, struct client_connect_info *clients)
 {
     int i, client_count, listening_sock;    
     
     client_count = svm_count - 1;
-    listening_sock = get_listening_socket(client_count);    
+    listening_sock = master_listen(client_count);    
 
     /* start thread to receive connection from each client */
     for (i = 0; i < client_count; i++) {
         clients[i].master_sock = &listening_sock;
-        pthread_create(&clients[i].thread_id, NULL, client_socket_init, &clients[i]);
+        pthread_create(&clients[i].thread_id, NULL,
+                master_handshake_per_client, &clients[i]);
     }
     
     /* Wait for clients to respond before progressing */
@@ -108,7 +92,7 @@ void clients_sockets_init(int svm_count, struct client_connect_info *clients)
 }
 
 /* wait for clients to register */
-int dsm_clients_register(int svm_count, struct svm_data *svm_array,
+int master_clients_register(int svm_count, struct hecaioc_svm *svm_array,
         struct client_connect_info *clients)
 {  
     int i, client_count, n, ack;    
@@ -123,7 +107,7 @@ int dsm_clients_register(int svm_count, struct svm_data *svm_array,
         }
 
         n = write(clients[i].client_sock, svm_array,
-                svm_count * sizeof(struct svm_data));
+                svm_count * sizeof(*svm_array));
         if (n <  0) {
             DEBUG_ERROR("Could not write to socket");
             return -1;
@@ -143,39 +127,8 @@ int dsm_clients_register(int svm_count, struct svm_data *svm_array,
     return 0;    
 }
 
-/* register and connect remote svms */
-int dsm_connect(int fd, int local_svm_id, int svm_count,
-        struct svm_data *svm_array)
-{
-    int i, rc;
-    struct svm_data *svm;
-    
-    for (i = 0; i < svm_count; i++) {
-        
-        if (i == local_svm_id-1)
-            continue; // only connect to remote svms
-        
-        svm = &svm_array[i];
-
-        DEBUG_PRINT("DSM_SVM (remote)\n");
-        rc = ioctl(fd, DSM_SVM, svm);
-        if (rc) {
-            DEBUG_ERROR("DSM_SVM (remote)");
-            return -1;
-        }
-
-        DEBUG_PRINT("DSM_CONNECT\n");
-        rc = ioctl(fd, DSM_CONNECT, svm);
-        if (rc) {
-            DEBUG_ERROR("DSM_CONNECT");
-            return -1;
-        }
-    }
-    return 0;
-}
-
 /* wait for clients to connect */
-int dsm_clients_connect(int svm_count, struct svm_data *svm_array,
+int master_clients_connect(int svm_count, struct hecaioc_svm *svm_array,
         struct client_connect_info *clients)
 {
     int i, client_count, sig, n, ack;
@@ -207,8 +160,8 @@ int dsm_clients_connect(int svm_count, struct svm_data *svm_array,
 }
 
 /* client maps its valloc()ed memory into memory regions */
-int dsm_client_assign_mem(void *dsm_mem, unsigned long dsm_mem_sz, int mr_count,
-        struct unmap_data *mr_array)
+int client_assign_mem(void *dsm_mem, unsigned long dsm_mem_sz, int mr_count,
+        struct hecaioc_mr *mr_array)
 {
     int i;
     void *pos = dsm_mem;
@@ -225,43 +178,10 @@ int dsm_client_assign_mem(void *dsm_mem, unsigned long dsm_mem_sz, int mr_count,
     return 0;
 }
 
-/* register memory regions, unmap to remotes if needed */
-int dsm_memory_map(int fd, int mr_count, struct unmap_data *unmap_array,
-        int local_svm_id, int auto_unmap)
-{
-    int i, j, rc = 0;
-    struct unmap_data mr;
-
-    for (i = 0; i < mr_count; i++)
-    {
-        mr = unmap_array[i];
-        if (auto_unmap)
-            mr.unmap = TRUE;
-        else
-            mr.unmap = FALSE;
-
-        j = 0;
-        while (mr.svm_ids[j] != 0) {
-            if (local_svm_id == mr.svm_ids[j]) {
-                mr.unmap = FALSE;
-                break;
-            }
-            j++;
-        }
-        DEBUG_PRINT("DSM_MR system call\n");
-        rc = ioctl(fd, DSM_MR, &mr);
-        if (rc < 0) {
-            DEBUG_ERROR("DSM_MR");
-            return -1;
-        }
-    }
-    return 0;
-}
-
 /* wait for clients to register memory regions */
 /* FIXME: erase unneeded local pointers on unmap_array */
-int dsm_clients_memory_map(int svm_count, int mr_count,
-        struct unmap_data *unmap_array, struct client_connect_info *clients)
+int master_clients_mmap(int svm_count, int mr_count,
+        struct hecaioc_mr *unmap_array, struct client_connect_info *clients)
 {
     int i, client_count, n, ack_sig;
     client_count = svm_count - 1;
@@ -277,7 +197,7 @@ int dsm_clients_memory_map(int svm_count, int mr_count,
         }
         
         n = write(clients[i].client_sock, unmap_array,
-                mr_count * sizeof(struct unmap_data));
+                mr_count * sizeof(struct hecaioc_mr));
         if (n <  0) {
             DEBUG_ERROR("Could not write to socket");
             return n;
@@ -298,7 +218,7 @@ int dsm_clients_memory_map(int svm_count, int mr_count,
     return 0;
 }
 
-void clients_socket_cleanup(int svm_count, struct client_connect_info *clients)
+void master_close(int svm_count, struct client_connect_info *clients)
 {
     int i;
 
@@ -309,7 +229,7 @@ void clients_socket_cleanup(int svm_count, struct client_connect_info *clients)
 }
 
 /* client connects to master */
-int dsm_master_connect(struct sockaddr_in *master_addr, int svm_id)
+int client_connect(struct sockaddr_in *master_addr, int svm_id)
 {
     int sockfd, n;
 
@@ -334,7 +254,7 @@ int dsm_master_connect(struct sockaddr_in *master_addr, int svm_id)
     return sockfd;
 }
 
-int dsm_svm_count_recv(int sock, int *svm_count)
+int client_svm_count_recv(int sock, int *svm_count)
 {
     int n = read(sock, svm_count, sizeof(int));
     if (n < 0) {
@@ -346,18 +266,24 @@ int dsm_svm_count_recv(int sock, int *svm_count)
     return 0;
 }
 
-int dsm_svm_array_recv(int sock, int svm_count, struct svm_data *svm_array)
+int client_svm_array_recv(int sock, int svm_count,
+        struct hecaioc_svm *svm_array)
 {
-    int n = read(sock, svm_array, svm_count * sizeof(struct svm_data));
-
+    int n, i;
+   
+    n = read(sock, svm_array, svm_count * sizeof(*svm_array));
     if (n < 0) {
         DEBUG_ERROR("Could not read from socket");
         return n;
     }
+
+    for (i = 0; i < svm_count; i++)
+        svm_array[i].pid = 0; /* FIXME: master sent us local PID */
+
     return 0;
 }
 
-int dsm_client_registered(int sock)
+int client_register_ack(int sock)
 {
     int n, sig;
 
@@ -370,25 +296,19 @@ int dsm_client_registered(int sock)
     return 0;
 }
 
-/* set svm_data.local values, return svm_data for local svm */
-struct svm_data *dsm_local_svm_array_init(int svm_count,
-        struct svm_data *svm_array, int local_svm_id)
+struct hecaioc_svm *svm_array_init(int svm_count,
+        struct hecaioc_svm *svm_array, int local_svm_id)
 {
     int i;
 
-    for (i = 0; i < svm_count; i++) {
-        if (i == (local_svm_id - 1)) 
-            svm_array[i].local = TRUE;
-        else
-            svm_array[i].local = FALSE;
-    }
+    for (i = 0; i < svm_count; i++)
+        svm_array[i].is_local = (i == (local_svm_id - 1));
     
     return &svm_array[local_svm_id - 1];
 }
 
-
-int dsm_client_connect(int sock, int fd, int local_svm_id, int svm_count,
-        struct svm_data *svm_array)
+int client_svm_add(int sock, int fd, int local_svm_id, int svm_count,
+        struct hecaioc_svm *svm_array)
 {
     int n, sig, ret;
 
@@ -403,7 +323,7 @@ int dsm_client_connect(int sock, int fd, int local_svm_id, int svm_count,
         return -1;
     }
 
-    ret = dsm_connect(fd, local_svm_id, svm_count, svm_array);
+    ret = heca_svm_add(fd, local_svm_id, svm_count, svm_array);
     if (ret < 0) {
         return ret;
     }
@@ -417,7 +337,7 @@ int dsm_client_connect(int sock, int fd, int local_svm_id, int svm_count,
     return 0;
 }
 
-int dsm_mr_count_recv(int sock, int *mr_count)
+int client_mr_count_recv(int sock, int *mr_count)
 {
     int n;
     n = read(sock, mr_count, sizeof(int));
@@ -430,19 +350,21 @@ int dsm_mr_count_recv(int sock, int *mr_count)
     return 0;
 }
 
-int dsm_unmap_array_recv(int sock, int mr_count, struct unmap_data *unmap_array)
+int client_unmap_array_recv(int sock, int mr_count,
+        struct hecaioc_mr *unmap_array)
 {
     int n;
 
-    n = read(sock, unmap_array, mr_count * sizeof(struct unmap_data));
+    n = read(sock, unmap_array, mr_count * sizeof(*unmap_array));
     if (n < 0) {
         DEBUG_ERROR("Could not read from socket"); 
         return n;
     }
+
     return 0;
 }
 
-int dsm_client_memory_mapped(int sock)
+int client_mmap_ack(int sock)
 {
     int n, sig;
     

@@ -1,4 +1,4 @@
-#include "headers/poc.h"
+#include "poc.h"
 
 static void provide(char *conf_name, char *mvm_id_str)
 {
@@ -22,7 +22,7 @@ static void provide(char *conf_name, char *mvm_id_str)
     printf("Providing, press [enter] to finish.\n");
     fscanf(stdin, "%c", &x);
 
-    dsm_cleanup(fd);
+    heca_close(fd);
     config_clean(conf);
     free(mem);
 }
@@ -45,8 +45,8 @@ static void compute(unsigned long sz, char *conf_name)
     mem = valloc(sz);
     assert(mem);
     if (conf) {
-        struct unmap_data mr_array = {.id=1,.dsm_id=1,.sz=sz,.addr=mem};
-        fd = init_cvm(conf, &mr_array, 1);
+        struct hecaioc_mr mr_array = {.mr_id=1,.dsm_id=1,.sz=sz,.addr=mem,.flags=UD_AUTO_UNMAP|UD_SHARED};
+        fd = init_cvm(0, conf, &mr_array, 1, 1);
     }
     /* payload: configurable in the future */
     payload = quicksort;
@@ -56,7 +56,7 @@ static void compute(unsigned long sz, char *conf_name)
 
     /* cleanup */
     if (conf) {
-        dsm_cleanup(fd);
+        heca_close(fd);
         config_clean(conf);
     }
     free(mem);

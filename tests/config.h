@@ -5,8 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "linux/dsm.h"
-
 struct CONF {
     char *key;
     char *value;
@@ -18,6 +16,7 @@ void config_clean(struct CONF *);
 char *config_get(struct CONF *, char *);
 int config_get_int(struct CONF *, char *);
 int config_get_ints(struct CONF *, int *, char **, int);
+int config_count_ints(struct CONF *);
 
 #endif
 
