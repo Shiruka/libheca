@@ -9,14 +9,13 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "linux/dsm.h"
 #include "libheca.h"
 #include "config.h"
 
 #define COMPUTE_ID 1
 #define COMPUTE_ID_STR "1"
 
-int init_cvm(struct CONF *, struct unmap_data *, int);
+int init_cvm(pid_t child, struct CONF *, struct hecaioc_mr *, int, int);
 int init_mvm(unsigned long, void *, struct CONF *, int);
 
 #endif

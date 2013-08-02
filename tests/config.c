@@ -1,4 +1,4 @@
-#include "../headers/config.h"
+#include "config.h"
 
 struct CONF *config_parse(char *fname)
 {
@@ -82,6 +82,20 @@ int config_get_ints(struct CONF *conf, int *keys, char **values, int max)
             if (count == max)
                 break;
         }
+    }
+
+    return count;
+}
+
+int config_count_ints(struct CONF *conf)
+{
+    int i, count = 0;
+    char buf[2];
+
+    for (i = 0; i < 10; i++) {
+        sprintf(buf, "%d", i+1);
+        if (config_get(conf, buf))
+            count++;
     }
 
     return count;

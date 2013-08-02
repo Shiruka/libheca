@@ -1,4 +1,4 @@
-#include "../headers/quicksort.h"
+#include "quicksort.h"
 
 static unsigned int range = 20;
 static unsigned int num_cpus;
