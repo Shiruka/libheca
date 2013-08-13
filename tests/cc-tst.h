@@ -11,7 +11,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#include "dsm.h"
+#include "hspace.h"
 #include "config.h"
 
 #endif
