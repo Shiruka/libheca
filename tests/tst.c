@@ -2,9 +2,11 @@
 #include <sys/wait.h>
 #include <sys/file.h>
 #include <unistd.h>
+#include <sys/mman.h>
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "tst.h"
 
 static void print_pages(unsigned long n)
@@ -44,9 +46,9 @@ static void push_pages(pid_t child, int fd, unsigned long n)
     }
 }
 
-static void compute(char *conf_name)
+static void compute(char *conf_name, int kflag, int tflag, int pflag)
 {
-    int fd = -1, i, lockfd = -1, rc;
+    int fd = -1, i, lockfd = -1, rc, ret1, ret2;
     struct CONF *conf = NULL;
     pid_t child;
     const char *lockfn = "/tmp/tst.lock";
@@ -55,31 +57,114 @@ static void compute(char *conf_name)
 
     for_each_mr (i) {
         mr_array[i].addr = valloc(PAGE_SIZE*NUM_PAGES);
+
+        if (kflag == 1) {
+            ret1 = madvise(mr_array[i].addr, mr_count, MADV_MERGEABLE);
+            if (ret1 < 0)
+                perror("madvise error");
+        }
+
+        if (tflag == 1) {
+            ret2 = madvise(mr_array[i].addr, mr_count, MADV_HUGEPAGE);
+            if (ret2 < 0)
+                perror("madvise error");
+        }
+
 #if 0
         mr_array[i].flags |= UD_COPY_ON_ACCESS;
 #endif
     }
+    if (pflag == 1) {
+        if ((child = fork()) == -1) {
+            perror("fork error");
+            goto failure;
+        } else if (!child) {
+            if ((lockfd = open(lockfn, O_RDWR|O_CREAT|O_APPEND, 0666)) < 0) {
+                perror("open");
+                goto failure;
+            }
 
-    if ((child = fork()) == -1) {
-        perror("fork error");
-        goto failure;
-    } else if (!child) {
+            fprintf(stderr, "Child (%d): started\n", getpid());
+
+            sleep(2);
+
+            if (flock(lockfd, LOCK_EX) < 0) {
+                perror("flock");
+                goto failure;
+            }
+
+            notify("[1] pull all pages: ");
+            print_pages(NUM_PAGES);
+
+            if (flock(lockfd, LOCK_UN) < 0) {
+                perror("flock");
+                goto failure;
+            }  
+
+            sleep(1);
+
+            if (flock(lockfd, LOCK_EX) < 0) {
+                perror("flock");
+                goto failure;
+            }
+
+            notify("[4] re-pull pages:");
+            print_pages(NUM_PUSHBACK);
+
+            notify("[5] dirty and print pages (1):");
+            dirty_pages(NUM_PUSHBACK, '1');
+            print_pages(NUM_PUSHBACK);
+
+            notify("[7] dirty and print pages (3):");
+            dirty_pages(NUM_PUSHBACK, '3');
+            print_pages(NUM_PUSHBACK);
+
+            if (flock(lockfd, LOCK_UN) < 0) {
+                perror("flock");
+                goto failure;
+            }
+
+            sleep(1);
+
+            if (flock(lockfd, LOCK_EX) < 0) {
+                perror("flock");
+                goto failure;
+            }
+
+            notify("[.] disconnect:\n");
+            fprintf(stderr, "Child (%d): ended\n", getpid());
+
+            if (flock(lockfd, LOCK_UN) < 0) {
+                perror("flock");
+                goto failure;
+            }
+
+            goto done;
+        }
+
+        sleep(1);
+
         if ((lockfd = open(lockfn, O_RDWR|O_CREAT|O_APPEND, 0666)) < 0) {
             perror("open");
             goto failure;
-        }
-
-        fprintf(stderr, "Child (%d): started\n", getpid());
-
-        sleep(2);
+        }   
 
         if (flock(lockfd, LOCK_EX) < 0) {
             perror("flock");
             goto failure;
+        }  
+
+        fprintf(stderr, "[0] initialize:\n");
+
+        conf = config_parse(conf_name);
+        assert(conf);
+        fd = init_cvm(child, conf, mr_array, mr_count, 1);
+        if (fd < 0) {
+            fprintf(stderr, "can't open /dev/heca\n");
+            goto failure;
         }
 
-        notify("[1] pull all pages: ");
-        print_pages(NUM_PAGES);
+        fprintf(stderr, "Parent: completed HECA setup...\n");
 
         if (flock(lockfd, LOCK_UN) < 0) {
             perror("flock");
@@ -93,119 +178,49 @@ static void compute(char *conf_name)
             goto failure;
         }
 
-        notify("[4] re-pull pages:");
-        print_pages(NUM_PUSHBACK);
-
-        notify("[5] dirty and print pages (1):");
-        dirty_pages(NUM_PUSHBACK, '1');
-        print_pages(NUM_PUSHBACK);
-
-        notify("[7] dirty and print pages (3):");
-        dirty_pages(NUM_PUSHBACK, '3');
-        print_pages(NUM_PUSHBACK);
+        notify("[2] push back pages:");
+        push_pages(child, fd, NUM_PUSHBACK);
 
         if (flock(lockfd, LOCK_UN) < 0) {
             perror("flock");
             goto failure;
         }
 
-        sleep(1);
+        /* parent */
+        while (1) {
+            int status;
+            pid_t end;
 
-        if (flock(lockfd, LOCK_EX) < 0) {
-            perror("flock");
-            goto failure;
+            end = waitpid(child, &status, WNOHANG|WUNTRACED);
+            if (end == -1) {
+                perror("waitpid error");
+                goto failure;
+            } 
+            else if (!end) {
+                /* child still running */
+                sleep(1);
+            }
+            else if (end == child) {
+                if (WIFEXITED(status))
+                    printf("Child ended normally\n");
+                else if (WIFSIGNALED(status))
+                    printf("Child ended because of an uncaught signal\n");
+                else if (WIFSTOPPED(status))
+                    printf("Child process has stopped\n");
+                break;
+            }
         }
 
-        notify("[.] disconnect:\n");
-        fprintf(stderr, "Child (%d): ended\n", getpid());
+        fprintf(stderr, "Parent (%d): is back\n", getpid());
 
-        if (flock(lockfd, LOCK_UN) < 0) {
-            perror("flock");
-            goto failure;
-        }
+        notify("[X] parent will now close /dev/heca");
+        heca_close(fd);
+        fd = -1;
+        fprintf(stderr, "Parent (%d): ended\n", getpid());
 
+        rc = 0;
         goto done;
     }
-
-    sleep(1);
-
-    if ((lockfd = open(lockfn, O_RDWR|O_CREAT|O_APPEND, 0666)) < 0) {
-        perror("open");
-        goto failure;
-    }
-
-    if (flock(lockfd, LOCK_EX) < 0) {
-        perror("flock");
-        goto failure;
-    }
-
-    fprintf(stderr, "[0] initialize:\n");
-
-    conf = config_parse(conf_name);
-    assert(conf);
-    fd = init_cvm(child, conf, mr_array, mr_count, 1);
-    if (fd < 0) {
-        fprintf(stderr, "can't open /dev/heca\n");
-        goto failure;
-    }
-
-    fprintf(stderr, "Parent: completed HECA setup...\n");
-
-    if (flock(lockfd, LOCK_UN) < 0) {
-        perror("flock");
-        goto failure;
-    }
-
-    sleep(1);
-
-    if (flock(lockfd, LOCK_EX) < 0) {
-        perror("flock");
-        goto failure;
-    }
-
-    notify("[2] push back pages:");
-    push_pages(child, fd, NUM_PUSHBACK);
-
-    if (flock(lockfd, LOCK_UN) < 0) {
-        perror("flock");
-        goto failure;
-    }
-
-    /* parent */
-    while (1) {
-        int status;
-        pid_t end;
-
-        end = waitpid(child, &status, WNOHANG|WUNTRACED);
-        if (end == -1) {
-            perror("waitpid error");
-            goto failure;
-        }
-        else if (!end) {
-            /* child still running */
-            sleep(1);
-        }
-        else if (end == child) {
-            if (WIFEXITED(status))
-                printf("Child ended normally\n");
-            else if (WIFSIGNALED(status))
-                printf("Child ended because of an uncaught signal\n");
-            else if (WIFSTOPPED(status))
-                printf("Child process has stopped\n");
-            break;
-        }
-    }
-
-    fprintf(stderr, "Parent (%d): is back\n", getpid());
-
-    notify("[X] parent will now close /dev/heca");
-    heca_close(fd);
-    fd = -1;
-    fprintf(stderr, "Parent (%d): ended\n", getpid());
-
-    rc = 0;
-    goto done;
-
     /* child/parent cleanup */
 failure:
     rc = 1;
@@ -221,11 +236,11 @@ done:
     exit(rc);
 }
 
-static void provide(char *conf_name, int mvm_id, char c)
+static void provide(char *conf_name, int mvm_id, char c, int kflag, int tflag, int pflag)
 {
     struct CONF *conf;
     unsigned long sz = PAGE_SIZE*NUM_PAGES*mr_count;
-    int fd, i;
+    int fd, i, ret1, ret2;
     void *mem;
 
     conf = config_parse(conf_name);
@@ -234,56 +249,128 @@ static void provide(char *conf_name, int mvm_id, char c)
     mem = valloc(sz);
     assert(mem);
     memset(mem, c, sz);
-    for_each_mr (i)
+
+    for_each_mr (i) {
         mr_array[i].addr = mem + (i * mr_array[i].sz);
 
-    printf("[0] initialize %d: ", mvm_id);
-    notify("");
-    fd = init_mvm(sz, mem, conf, mvm_id);
-    if (fd < 0) {
-        fprintf(stderr, "can't open /dev/heca\n");
-        return;
+        if (kflag == 1) {
+            ret1 = madvise(mr_array[i].addr, mr_count, MADV_MERGEABLE);
+            if (ret1 < 0)
+                perror("madvise error");
+        }
+
+        if (tflag == 1) {
+            ret2 = madvise(mr_array[i].addr, mr_count, MADV_HUGEPAGE);
+            if (ret2 < 0)
+                perror("madvise error");
+        }
     }
+    
+    if (pflag == 1) {
+        printf("[0] initialize %d: ", mvm_id);
+        notify("");
+        fd = init_mvm(sz, mem, conf, mvm_id);
+        if (fd < 0) {
+            fprintf(stderr, "can't open /dev/heca\n");
+            return;
+        }
 
-    notify("[3] dirty pages:");
-    c = (mvm_id % 2)? 'd' : 'e';
-    dirty_pages(NUM_PUSHBACK, c);
+        notify("[3] dirty pages:");
+        c = (mvm_id % 2)? 'd' : 'e';
+        dirty_pages(NUM_PUSHBACK, c);
 
-    notify("[6] dirty and print pages (2):");
-    dirty_pages(NUM_PUSHBACK, '2');
-    print_pages(NUM_PUSHBACK);
+        notify("[6] dirty and print pages (2):");
+        dirty_pages(NUM_PUSHBACK, '2');
+        print_pages(NUM_PUSHBACK);
 
-    notify("[.]disconnect:\n");
-    heca_close(fd);
+        notify("[.]disconnect:\n");
+        heca_close(fd);
+    }
 }
 
 static void print_usage(void)
 {
-    printf("usage:\n"
-            "{compute:} ./tst [config file name] \n"
-            "{provide:} ./tst [config file name] [id]\n");
+ printf("usage:\n"
+            "{compute:} ./tst -m (master) -f [config file name] -k (Kernel Samepage Merging command) -t (Transparent Huge Page command) -p (Pushing and Pulling command)\n"
+            "{provide:} ./tst -s (slave) -f [config file name] -i [id] -k (Kernel Samepage Merging command) -t (Transparent Huge Page command)-p (Pushing and Pulling command)\n");
 }
 
 int main(int argc, char **argv)
 {
-    if (argc != 2 && argc != 3) {
-        print_usage();
-        goto out;
-    }
+    int mvmid = NULL, kflag = 0, tflag = 0, mflag = 0, sflag = 0, idflag = 0, pflag = 0, c;
+    char *config, *id;
+    opterr = 0;
+    FILE *fp;
+    size_t len = 0;
+    ssize_t read;
+
+    while ((c = getopt (argc, argv, "msf:i:ktp")) != -1) {
+        switch (c) {
+           case 'm':
+             mflag = 1;
+             break;
+           case 's':
+             sflag = 1;
+           case 'f':
+             config = optarg;
+             break;
+           case 'i':
+             mvmid = atoi(optarg);
+             break;
+           case 'k':
+             kflag = 1;
+             break;
+           case 't':
+             tflag = 1;
+             break;
+           case 'p':
+             pflag = 1;
+             break;
+           case '?':
+             if (optopt == 'c') {
+               print_usage();
+               goto out;
+               }
+             else if (isprint (optopt)) {
+               print_usage();
+               goto out;
+               }
+             else {
+               print_usage();
+               goto out;
+               }
+             return 1;
+           default:
+             abort();
+           }
+        }
 
     /* compute machine */
-    if (argc == 2) {
-        compute(argv[1]);
+    if (mflag == 1)
+        compute(config, kflag, tflag, pflag);
 
     /* provider machine */
-    } else {
-        if (!atoi(argv[2])) {
-            print_usage();
-            goto out;
-        }
-        provide(argv[1], atoi(argv[2]), argv[2][0]);
-    }
+    else if (sflag == 1) {
+        fp = fopen(config, "rt");
+        int i, initnum;
+        char initchar;
 
+        while((read = getline(&id, &len, fp)) != -1) {
+           initchar = id[0];
+      
+           if ('0' <= initchar &&  initchar <= '9') {
+             initnum = initchar - '0';
+           }
+
+           if(initnum == mvmid) {
+             idflag = 1;
+             break;
+           }
+        }
+
+        if (idflag == 1)
+           provide(config, mvmid, argv[2][0], kflag, tflag, pflag);
+    }
 out:
     return 0;
 }
