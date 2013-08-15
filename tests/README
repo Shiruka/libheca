@@ -57,14 +57,16 @@ pages, and lastly the computation node printf()s again, re-pulling the pages.
 3.1 usage
 ---------
 On the computation machine:
- ./tst {config file}
+ ./tst -m (master) -f [config file name] -k (Kernel Samepage Merging command) -t (Transparent Huge Page command) -p (Pushing and Pulling command)
 On the memory sponsor/s:
- ./tst {config file} {machine id}
+ ./tst -s (slave) -f [config file name] -i [id] -k (Kernel Samepage Merging command) -t (Transparent Huge Page command)-p (Pushing and Pulling command)
 
 The cluster will then be setup according to the configuration.
 
 3.2 walkthrough
 ---------------
+Should "-p" be entered you will require to follow these instructions:
+
 CM := computation machine
 MS := memory sponsor
 
@@ -101,6 +103,8 @@ MS := memory sponsor
  [CM] disconnect:           ... press enter
  [MS] disconnect:           ... press enter
 }
+
+Otherwise "-k" or "-t" should run with minimal output.
 
 If all output is as expected, and no crashes occured, the test passed well.
 
