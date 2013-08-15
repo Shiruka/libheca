@@ -27,8 +27,12 @@ cctst_INC :=
 ccpoc_BIN := cc-poc
 ccpoc_DEP := 
 ccpoc_INC :=
+ 
+kernelcheck_BIN := kernelcheck
+kernelcheck_DEP :=
+kernelcheck_INC :=
 
-BIN := $(tst_BIN) $(poc_BIN) $(cctst_BIN) $(ccpoc_BIN)
+BIN := $(tst_BIN) $(poc_BIN) $(cctst_BIN) $(ccpoc_BIN) $(kernelcheck_BIN)
 
 %: %.c $(DEP) $(value %_DEP) %.h $(INC) $(value %_INC)
 	$(CC) $(CFLAGS) $@.c $(DEP) $(value $@_DEP) -o $@ $(LDFLAGS)
