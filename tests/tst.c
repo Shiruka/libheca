@@ -46,14 +46,13 @@ static void push_pages(pid_t child, int fd, unsigned long n)
     }
 }
 
-static void compute(char *conf_name, int kflag, int tflag, int pflag)
+static void compute(char *conf_name, int kflag, int tflag, int pflag, int lflag, int no_loops, int rest)
 {
-    int fd = -1, i, lockfd = -1, rc, ret1, ret2;
+    int fd = -1, i, lockfd = -1, rc, ret1, ret2, j;
     struct CONF *conf = NULL;
     pid_t child;
     const char *lockfn = "/tmp/tst.lock";
-
-    fprintf(stderr, "Parent (%d): started\n", getpid());
+    char *write = 'A';
 
     for_each_mr (i) {
         mr_array[i].addr = valloc(PAGE_SIZE*NUM_PAGES);
@@ -62,19 +61,36 @@ static void compute(char *conf_name, int kflag, int tflag, int pflag)
             ret1 = madvise(mr_array[i].addr, mr_count, MADV_MERGEABLE);
             if (ret1 < 0)
                 perror("madvise error");
-        }
-
+            notify("Finished");
+	}
+    
         if (tflag == 1) {
             ret2 = madvise(mr_array[i].addr, mr_count, MADV_HUGEPAGE);
             if (ret2 < 0)
                 perror("madvise error");
+	    notify("Finished");
         }
+    }
 
+    if (lflag == 1){
+        for(j = 0; j < no_loops; j++) {        
+            for_each_mr (i) {
+                dirty_pages(NUM_PUSHBACK ,write);
+                print_pages(NUM_PUSHBACK);
+            }
+            write++;
+            sleep(rest);
+        }
+    
+        notify("Finished");
+    }   
 #if 0
         mr_array[i].flags |= UD_COPY_ON_ACCESS;
 #endif
-    }
+   
     if (pflag == 1) {
+        fprintf(stderr, "Parent (%d): started\n", getpid());
+
         if ((child = fork()) == -1) {
             perror("fork error");
             goto failure;
@@ -236,12 +252,13 @@ done:
     exit(rc);
 }
 
-static void provide(char *conf_name, int mvm_id, char c, int kflag, int tflag, int pflag)
+static void provide(char *conf_name, int mvm_id, char c, int kflag, int tflag, int pflag, int lflag, int no_loops, int rest)
 {
     struct CONF *conf;
     unsigned long sz = PAGE_SIZE*NUM_PAGES*mr_count;
-    int fd, i, ret1, ret2;
+    int fd, i, ret1, ret2, j;
     void *mem;
+    char *write = 'A';
 
     conf = config_parse(conf_name);
     assert(conf);
@@ -257,13 +274,28 @@ static void provide(char *conf_name, int mvm_id, char c, int kflag, int tflag, i
             ret1 = madvise(mr_array[i].addr, mr_count, MADV_MERGEABLE);
             if (ret1 < 0)
                 perror("madvise error");
+	    notify("Finished");
         }
 
         if (tflag == 1) {
             ret2 = madvise(mr_array[i].addr, mr_count, MADV_HUGEPAGE);
             if (ret2 < 0)
                 perror("madvise error");
+            notify("Finished");
         }
+    }
+    
+    if (lflag == 1) {
+        for(j = 0; j < no_loops; j++) {
+            for_each_mr (i) {
+                dirty_pages(NUM_PUSHBACK ,write);
+		print_pages(NUM_PUSHBACK);
+            }
+            write++;
+            sleep(rest);
+        }
+
+        notify("Finished");
     }
     
     if (pflag == 1) {
@@ -291,31 +323,39 @@ static void provide(char *conf_name, int mvm_id, char c, int kflag, int tflag, i
 static void print_usage(void)
 {
  printf("usage:\n"
-            "{compute:} ./tst -m (master) -f [config file name] -k (Kernel Samepage Merging command) -t (Transparent Huge Page command) -p (Pushing and Pulling command)\n"
-            "{provide:} ./tst -s (slave) -f [config file name] -i [id] -k (Kernel Samepage Merging command) -t (Transparent Huge Page command)-p (Pushing and Pulling command)\n");
+            "{compute:} ./tst -m (master) -f [config file name] -k (Kernel Samepage Merging command) -t (Transparent Huge Page command) -p (Pushing and Pulling command) -l [number of loops] -r [how long to rest]\n"
+            "{provide:} ./tst -s (slave) -f [config file name] -i [id] -k (Kernel Samepage Merging command) -t (Transparent Huge Page command) -p (Pushing and Pulling command) -l [number of loops] -r [how long to rest]\n");
 }
 
 int main(int argc, char **argv)
 {
-    int mvmid = NULL, kflag = 0, tflag = 0, mflag = 0, sflag = 0, idflag = 0, pflag = 0, c;
-    char *config, *id;
+    int mvmid = NULL, kflag = 0, tflag = 0, mflag = 0, sflag = 0, idflag = 0, pflag = 0, lflag = 0, c, no_loops, rest = 0;
+    char *config, *id = NULL;
     opterr = 0;
     FILE *fp;
     size_t len = 0;
     ssize_t read;
 
-    while ((c = getopt (argc, argv, "msf:i:ktp")) != -1) {
+    while ((c = getopt (argc, argv, "msf:i:pl:ktr:")) != -1) {
         switch (c) {
            case 'm':
              mflag = 1;
              break;
            case 's':
              sflag = 1;
+	     break;
            case 'f':
              config = optarg;
              break;
            case 'i':
              mvmid = atoi(optarg);
+             break;
+           case 'p':
+             pflag = 1;
+             break;
+           case 'l':
+             no_loops = atoi(optarg);
+             lflag = 1;
              break;
            case 'k':
              kflag = 1;
@@ -323,8 +363,8 @@ int main(int argc, char **argv)
            case 't':
              tflag = 1;
              break;
-           case 'p':
-             pflag = 1;
+           case 'r':
+             rest = atoi(optarg);
              break;
            case '?':
              if (optopt == 'c') {
@@ -345,32 +385,42 @@ int main(int argc, char **argv)
            }
         }
 
+    if (((mflag == 0) && (sflag == 0)) || ((sflag == 1) && (mvmid == 0)) || ((kflag == 0) && (tflag == 0) && (pflag == 0) && (lflag == 0)) || ((lflag == 1) && (rest == 0))) {
+        print_usage();
+        goto out;
+    }
+
     /* compute machine */
     if (mflag == 1)
-        compute(config, kflag, tflag, pflag);
+        compute(config, kflag, tflag, pflag, lflag, no_loops, rest);
 
     /* provider machine */
     else if (sflag == 1) {
         fp = fopen(config, "rt");
+	if (fp == NULL) {
+	    printf("File does not exist\n");
+	    goto out;
+        }
         int i, initnum;
         char initchar;
 
         while((read = getline(&id, &len, fp)) != -1) {
            initchar = id[0];
       
-           if ('0' <= initchar &&  initchar <= '9') {
-             initnum = initchar - '0';
+           if ('0' <= initchar && initchar <= '9') {
+               initnum = initchar - '0';
            }
 
            if(initnum == mvmid) {
-             idflag = 1;
-             break;
+               idflag = 1;
+               break;
            }
         }
 
         if (idflag == 1)
-           provide(config, mvmid, argv[2][0], kflag, tflag, pflag);
+           provide(config, mvmid, argv[2][0], kflag, tflag, pflag, lflag, no_loops, rest);
     }
+
 out:
     return 0;
 }
