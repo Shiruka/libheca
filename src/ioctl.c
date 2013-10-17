@@ -99,6 +99,23 @@ int heca_hmr_add(int fd, int hmr_count, struct hecaioc_hmr *unmap_array)
         return 0;
 }
 
+int heca_hmr_rm(int fd, int id)
+{
+        int rc = 0;
+        struct hecaioc_hmr hmr = {
+		        .hspace_id = static_hspace_id,
+	            .hmr_id = id,
+        };
+        
+        DEBUG_PRINT("HECAIOC_HMR_RM system call\n");
+        rc = ioctl(fd, HECAIOC_HMR_RM, &hmr);
+        if (rc < 0) {
+                DEBUG_ERROR("HECAIOC_HMR_RM");
+                return rc;
+        }
+        return 0;
+}
+       
 int heca_ps_pushback(int fd, int count, struct hecaioc_ps *array)
 {
         int i, rc = 0;
@@ -124,14 +141,6 @@ void heca_close(int fd)
         };
 
         assert(static_hspace_id);
-
-	struct hecaioc_hmr hmr = {
-		.hspace_id = static_hspace_id,
-		.hmr_id = 4,
-	};
-	DEBUG_PRINT("HECAIOC_HMR_RM system call\n");
-        if (ioctl(fd, HECAIOC_HMR_RM, &hmr))
-                DEBUG_ERROR("HECAIOC_HMR_RM");
 
         DEBUG_PRINT("HECAIOC_HSPACE_RM system call\n");
         if (ioctl(fd, HECAIOC_HSPACE_RM, &hspace))

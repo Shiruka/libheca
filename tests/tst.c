@@ -229,6 +229,7 @@ static void compute(char *conf_name, int kflag, int tflag, int pflag, int lflag,
 
                 fprintf(stderr, "Parent (%d): is back\n", getpid());
 
+                heca_hmr_rm(fd, 4);
                 notify("[X] parent will now close /dev/heca");
                 heca_close(fd);
                 fd = -1;
