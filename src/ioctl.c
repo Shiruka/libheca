@@ -103,15 +103,15 @@ int heca_hmr_rm(int fd, int id)
 {
         int rc = 0;
         struct hecaioc_hmr hmr = {
-		        .hspace_id = static_hspace_id,
-	            .hmr_id = id,
+            .hspace_id = static_hspace_id,
+            .hmr_id = id,
         };
-        
+
         DEBUG_PRINT("HECAIOC_HMR_RM system call\n");
         rc = ioctl(fd, HECAIOC_HMR_RM, &hmr);
         if (rc < 0) {
-                DEBUG_ERROR("HECAIOC_HMR_RM");
-                return rc;
+            DEBUG_ERROR("HECAIOC_HMR_RM");
+            return rc;
         }
         return 0;
 }
