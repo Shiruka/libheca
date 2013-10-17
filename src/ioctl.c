@@ -124,6 +124,15 @@ void heca_close(int fd)
         };
 
         assert(static_hspace_id);
+
+	struct hecaioc_hmr hmr = {
+		.hspace_id = static_hspace_id,
+		.hmr_id = 4,
+	};
+	DEBUG_PRINT("HECAIOC_HMR_RM system call\n");
+        if (ioctl(fd, HECAIOC_HMR_RM, &hmr))
+                DEBUG_ERROR("HECAIOC_HMR_RM");
+
         DEBUG_PRINT("HECAIOC_HSPACE_RM system call\n");
         if (ioctl(fd, HECAIOC_HSPACE_RM, &hspace))
                 DEBUG_ERROR("HECAIOC_HSPACE_RM");
